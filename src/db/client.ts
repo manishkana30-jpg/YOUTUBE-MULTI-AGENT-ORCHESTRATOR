@@ -112,6 +112,24 @@ export class DatabaseService {
     return this.localStore.channels.filter((c) => c.active_status);
   }
 
+  public async upsertChannel(channel: Channel): Promise<void> {
+    if (this.isSupabaseActive && this.client) {
+      try {
+        await this.client.from('channels').upsert(channel);
+      } catch (err: any) {
+        console.warn('[DB] Supabase upsertChannel error:', err.message);
+      }
+    }
+
+    const idx = this.localStore.channels.findIndex((c) => c.id === channel.id);
+    if (idx >= 0) {
+      this.localStore.channels[idx] = channel;
+    } else {
+      this.localStore.channels.push(channel);
+    }
+    saveLocalStore(this.localStore);
+  }
+
   public async fetchPendingBriefs(channelId?: string): Promise<ContentCalendarItem[]> {
     if (this.isSupabaseActive && this.client) {
       let query = this.client

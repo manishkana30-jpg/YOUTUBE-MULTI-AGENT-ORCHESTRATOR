@@ -1,6 +1,9 @@
 import express, { Request, Response } from 'express';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
+import { google } from 'googleapis';
+import fs from 'fs';
+import path from 'path';
 import { masterOrchestrator } from './agents/orchestrator.js';
 import { db } from './db/client.js';
 
@@ -9,6 +12,36 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 9 * * *';
+
+const YOUTUBE_SCOPES = [
+  'https://www.googleapis.com/auth/youtube.upload',
+  'https://www.googleapis.com/auth/youtube',
+  'https://www.googleapis.com/auth/youtube.readonly'
+];
+
+function getRedirectUri(req: Request): string {
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = forwardedProto ? (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) : req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  return `${protocol}://${host}/auth/youtube/callback`;
+}
+
+function getConnectedChannel(): { isConnected: boolean; title?: string; id?: string } {
+  try {
+    const raw = process.env.YOUTUBE_OAUTH_CLIENT;
+    if (raw && !raw.includes('"client_id":""')) {
+      const parsed = JSON.parse(raw);
+      if (parsed.refresh_token) {
+        return {
+          isConnected: true,
+          title: parsed.channel_title || 'Connected Channel',
+          id: parsed.channel_id
+        };
+      }
+    }
+  } catch {}
+  return { isConnected: false };
+}
 
 app.use(express.json());
 
@@ -65,11 +98,392 @@ app.get('/api/calendar', async (req: Request, res: Response) => {
   res.json({ briefs });
 });
 
-// 5. Visual Dashboard UI (Served at `/`)
+// 5. YouTube OAuth Web App - Initiation Endpoint (Works on Vercel & Local)
+app.get(['/auth/youtube', '/api/auth/youtube'], (req: Request, res: Response) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID || '';
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+
+  if (!clientId || !clientSecret) {
+    return res.status(500).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>OAuth Configuration Missing</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: 'Plus Jakarta Sans', sans-serif; background: #090A0F; color: #FFF; padding: 3rem; text-align: center; }
+          .card { max-width: 540px; margin: 2rem auto; background: #12141D; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 2rem; }
+          a { color: #818CF8; text-decoration: none; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2 style="color: #FF2A55; margin-bottom: 1rem;">Google OAuth Credentials Missing</h2>
+          <p style="color: #9CA3AF; margin-bottom: 1.5rem;">
+            Please ensure <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> are set in your Environment Variables (on Vercel or in .env).
+          </p>
+          <a href="/">← Return to Dashboard</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  const redirectUri = getRedirectUri(req);
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: YOUTUBE_SCOPES,
+    prompt: 'consent'
+  });
+
+  res.redirect(authUrl);
+});
+
+// 6. YouTube OAuth Web App - Callback Endpoint (Works on Vercel & Local)
+app.get(['/auth/youtube/callback', '/api/auth/youtube/callback'], async (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  const errorParam = req.query.error as string;
+
+  if (errorParam) {
+    return res.status(400).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Authorization Cancelled</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: 'Plus Jakarta Sans', sans-serif; background: #090A0F; color: #FFF; padding: 3rem; text-align: center; }
+          .card { max-width: 540px; margin: 2rem auto; background: #12141D; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 2rem; }
+          a { color: #818CF8; text-decoration: none; display: inline-block; margin-top: 1rem; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2 style="color: #EF4444; margin-bottom: 1rem;">Authorization Cancelled</h2>
+          <p style="color: #9CA3AF;">Google returned: <code>${errorParam}</code></p>
+          <a href="/">← Return to Dashboard</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  if (!code) {
+    return res.status(400).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Missing Authorization Code</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: 'Plus Jakarta Sans', sans-serif; background: #090A0F; color: #FFF; padding: 3rem; text-align: center; }
+          .card { max-width: 540px; margin: 2rem auto; background: #12141D; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 2rem; }
+          a { color: #818CF8; text-decoration: none; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2 style="color: #EF4444; margin-bottom: 1rem;">Missing Code</h2>
+          <p style="color: #9CA3AF;">No OAuth code parameter was found in the callback request.</p>
+          <a href="/">← Return to Dashboard</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID || '';
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    const redirectUri = getRedirectUri(req);
+
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+    let channelTitle = 'YouTube Channel';
+    let channelId = 'c001-ai-engineering';
+    let channelAvatar = '';
+    let subscriberCount = 'N/A';
+
+    try {
+      const channelRes = await youtube.channels.list({ part: ['snippet', 'statistics'], mine: true });
+      const item = channelRes.data.items?.[0];
+      if (item) {
+        channelTitle = item.snippet?.title || channelTitle;
+        channelId = item.id || channelId;
+        channelAvatar = item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '';
+        subscriberCount = item.statistics?.subscriberCount ? Number(item.statistics.subscriberCount).toLocaleString() : 'N/A';
+      }
+    } catch (e: any) {
+      console.warn('[YouTube OAuth WebApp] Could not fetch channel profile:', e.message);
+    }
+
+    const oauthConfig = {
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: tokens.refresh_token,
+      channel_title: channelTitle,
+      channel_id: channelId
+    };
+
+    const oauthString = JSON.stringify(oauthConfig);
+    process.env.YOUTUBE_OAUTH_CLIENT = oauthString;
+
+    // Persist to local .env if writable
+    try {
+      const envPath = path.resolve(process.cwd(), '.env');
+      if (fs.existsSync(envPath)) {
+        let envContent = fs.readFileSync(envPath, 'utf-8');
+        if (envContent.includes('YOUTUBE_OAUTH_CLIENT=')) {
+          envContent = envContent.replace(/YOUTUBE_OAUTH_CLIENT=.*(\r?\n|$)/, `YOUTUBE_OAUTH_CLIENT=${oauthString}\n`);
+        } else {
+          envContent += `\nYOUTUBE_OAUTH_CLIENT=${oauthString}\n`;
+        }
+        fs.writeFileSync(envPath, envContent, 'utf-8');
+      }
+    } catch {}
+
+    // Upsert channel into Database (Supabase / local fallback store)
+    await db.upsertChannel({
+      id: channelId,
+      niche: `${channelTitle} Production`,
+      target_audience: 'Subscribers & Viewers',
+      upload_frequency: 'daily',
+      active_status: true,
+      created_at: new Date().toISOString()
+    });
+
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Channel Connected — Antigravity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #151828 0%, #090A0F 100%);
+      color: #F3F4F6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      background: rgba(18, 20, 29, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 2.5rem;
+      max-width: 620px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 42, 85, 0.15);
+    }
+    .avatar-wrapper {
+      position: relative;
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 1.5rem;
+    }
+    .avatar {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      border: 3px solid #FF2A55;
+      object-fit: cover;
+      box-shadow: 0 0 25px rgba(255, 42, 85, 0.4);
+    }
+    .avatar-badge {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #10B981;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #090A0F;
+      font-size: 13px;
+    }
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #FFF 40%, #9CA3AF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .channel-title {
+      color: #FF2A55;
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+    .channel-meta {
+      color: #9CA3AF;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .env-box {
+      background: #0D0E15;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: left;
+      margin-bottom: 1.75rem;
+    }
+    .env-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-size: 0.75rem;
+      color: #9CA3AF;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .code-snippet {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: #34D399;
+      word-break: break-all;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+    .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.75rem 1.4rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .btn-primary {
+      background: #FF2A55;
+      color: #FFF;
+      box-shadow: 0 4px 15px rgba(255, 42, 85, 0.35);
+    }
+    .btn-primary:hover {
+      background: #E02047;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #F3F4F6;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .copy-btn {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818CF8;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .copy-btn:hover { background: rgba(99, 102, 241, 0.35); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="avatar-wrapper">
+      <img src="${channelAvatar || 'https://www.youtube.com/s/desktop/d743f786/img/favicon_144x144.png'}" class="avatar" alt="Channel Avatar" />
+      <div class="avatar-badge">✓</div>
+    </div>
+    <h1>YouTube Channel Connected!</h1>
+    <div class="channel-title">${channelTitle}</div>
+    <div class="channel-meta">Channel ID: <span style="font-family: 'JetBrains Mono', monospace; color: #FFF;">${channelId}</span> &bull; Subscribers: ${subscriberCount}</div>
+
+    <div class="env-box">
+      <div class="env-box-header">
+        <span>Vercel Environment Variable Sync</span>
+        <button class="copy-btn" onclick="copyEnvVar()">Copy Variable</button>
+      </div>
+      <div style="font-size: 0.8rem; color: #9CA3AF; margin-bottom: 0.6rem;">
+        If deploying on Vercel, copy this into your <strong>Vercel Project Settings &rarr; Environment Variables</strong>:
+      </div>
+      <div class="code-snippet" id="envSnippet">YOUTUBE_OAUTH_CLIENT=${oauthString.replace(/"/g, '&quot;')}</div>
+    </div>
+
+    <div class="actions">
+      <a href="/" class="btn btn-primary">⚡ Return to Dashboard</a>
+      <button class="btn btn-secondary" onclick="copyEnvVar()">📋 Copy Vercel Env Var</button>
+    </div>
+  </div>
+
+  <script>
+    function copyEnvVar() {
+      const text = 'YOUTUBE_OAUTH_CLIENT=' + ${JSON.stringify(oauthString)};
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied YOUTUBE_OAUTH_CLIENT to clipboard! You can paste it into Vercel Project Settings.');
+      });
+    }
+  </script>
+</body>
+</html>`);
+  } catch (err: any) {
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Authentication Failed</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: 'Plus Jakarta Sans', sans-serif; background: #090A0F; color: #FFF; padding: 3rem; text-align: center; }
+          .card { max-width: 540px; margin: 2rem auto; background: #12141D; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 2rem; }
+          a { color: #818CF8; text-decoration: none; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2 style="color: #EF4444; margin-bottom: 1rem;">OAuth Token Exchange Failed</h2>
+          <p style="color: #9CA3AF;">${err?.message || err}</p>
+          <a href="/">← Return to Dashboard</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+});
+
+// 7. Visual Dashboard UI (Served at \`/\`)
 app.get('/', async (req: Request, res: Response) => {
   const stats = await db.getSystemStats();
   const logs = await db.getRecentLogs(15);
   const channels = await db.fetchActiveChannels();
+  const connectedChannel = getConnectedChannel();
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -198,7 +612,18 @@ app.get('/', async (req: Request, res: Response) => {
           Autonomous Production Pipeline &bull; Gemini 2.5 &bull; Supabase &bull; MCP SerpApi
         </p>
       </div>
-      <div style="display: flex; gap: 1rem; align-items: center;">
+      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        ${connectedChannel.isConnected ? `
+          <div class="badge" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34D399;">
+            <div class="badge-dot" style="background: #10B981; box-shadow: 0 0 8px #10B981;"></div>
+            🔴 ${connectedChannel.title}
+          </div>
+          <a href="/auth/youtube" style="font-size: 0.75rem; color: var(--text-muted); text-decoration: underline;">Switch Channel</a>
+        ` : `
+          <a href="/auth/youtube" class="btn" style="background: #FF0000; box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4); text-decoration: none; padding: 0.6rem 1.1rem;">
+            <span>🔴 Connect YouTube Channel</span>
+          </a>
+        `}
         <div class="badge">
           <div class="badge-dot"></div>
           CRON 09:00 UTC Active
@@ -210,6 +635,15 @@ app.get('/', async (req: Request, res: Response) => {
     </header>
 
     <div class="grid">
+      <div class="card">
+        <h3>YouTube Channel</h3>
+        <div class="val" style="font-size: 1.25rem; color: ${connectedChannel.isConnected ? '#34D399' : '#F87171'};">
+          ${connectedChannel.isConnected ? '● Connected' : '○ Not Linked'}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+          ${connectedChannel.isConnected ? (connectedChannel.title || 'Authorized for uploads') : '<a href="/auth/youtube" style="color: #FF2A55; text-decoration: underline;">Click to authorize channel</a>'}
+        </div>
+      </div>
       <div class="card">
         <h3>Active Channels</h3>
         <div class="val">${channels.length}</div>
@@ -224,13 +658,6 @@ app.get('/', async (req: Request, res: Response) => {
         <h3>Generated / Published</h3>
         <div class="val">${stats.generatedVideos}</div>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Metadata records synced</div>
-      </div>
-      <div class="card">
-        <h3>Database Mode</h3>
-        <div class="val" style="font-size: 1.25rem; color: ${stats.isSupabaseActive ? '#34D399' : '#818CF8'};">
-          ${stats.isSupabaseActive ? 'Supabase Live' : 'Local Fallback'}
-        </div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">PostgreSQL schema synced</div>
       </div>
     </div>
 
