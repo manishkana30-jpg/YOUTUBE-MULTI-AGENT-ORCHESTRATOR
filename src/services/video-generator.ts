@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import util from 'util';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 const execAsync = util.promisify(exec);
 
@@ -9,9 +10,17 @@ export class VideoGeneratorService {
   private outputDir: string;
 
   constructor() {
-    this.outputDir = path.resolve(process.cwd(), 'data', 'renders');
-    if (!fs.existsSync(this.outputDir)) {
-      fs.mkdirSync(this.outputDir, { recursive: true });
+    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    this.outputDir = isServerless 
+      ? path.join(os.tmpdir(), 'renders') 
+      : path.resolve(process.cwd(), 'data', 'renders');
+
+    try {
+      if (!fs.existsSync(this.outputDir)) {
+        fs.mkdirSync(this.outputDir, { recursive: true });
+      }
+    } catch (err: any) {
+      console.warn('[Video Generator] Output directory init warning:', err?.message || err);
     }
   }
 

@@ -9,8 +9,11 @@ dotenv.config();
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 
+import os from 'os';
+
 // Local fallback store file path for offline development or sandbox testing
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const isServerlessEnv = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+const DATA_DIR = isServerlessEnv ? path.join(os.tmpdir(), 'antigravity-data') : path.resolve(process.cwd(), 'data');
 const LOCAL_DB_PATH = path.join(DATA_DIR, 'local_db.json');
 
 interface LocalStore {
@@ -21,18 +24,6 @@ interface LocalStore {
 }
 
 function initLocalStore(): LocalStore {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-
-  if (fs.existsSync(LOCAL_DB_PATH)) {
-    try {
-      return JSON.parse(fs.readFileSync(LOCAL_DB_PATH, 'utf-8'));
-    } catch {
-      // fallback if corrupted
-    }
-  }
-
   const defaultStore: LocalStore = {
     channels: [
       {
@@ -58,7 +49,24 @@ function initLocalStore(): LocalStore {
     agent_logs: []
   };
 
-  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(defaultStore, null, 2), 'utf-8');
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    if (fs.existsSync(LOCAL_DB_PATH)) {
+      try {
+        return JSON.parse(fs.readFileSync(LOCAL_DB_PATH, 'utf-8'));
+      } catch {
+        // fallback if corrupted
+      }
+    }
+
+    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(defaultStore, null, 2), 'utf-8');
+  } catch (err: any) {
+    console.warn('[DB] Filesystem is read-only or restricted (Serverless environment). Using in-memory store.');
+  }
+
   return defaultStore;
 }
 
@@ -67,7 +75,7 @@ function saveLocalStore(store: LocalStore) {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(store, null, 2), 'utf-8');
   } catch (err) {
-    console.error('[DB] Failed to save local store:', err);
+    // Gracefully handle read-only filesystem on serverless
   }
 }
 
