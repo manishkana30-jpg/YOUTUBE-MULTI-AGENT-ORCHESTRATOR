@@ -1,112 +1,30 @@
-# ── Credentials & Secrets (NEVER commit these) ──────────────────
-.env
-.env.*
-!.env.example
-token.json
-credentials.json
-client_secret*.json
-oauth*.json
-*_token.json
-firebase-adminsdk-*.json
-*.pem
-*.key
-*.p12
-*.pfx
-*secret*
-*password*
-*apikey*
-
-# ── Python Bytecode & Cache ──────────────────────────────────────
+# Environments & Dependencies
+.venv/
+env/
+venv/
+node_modules/
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-.Python
 
-# ── Build & Packaging Artifacts ─────────────────────────────────
+# Build outputs & caches
 build/
 dist/
-*.egg-info/
-*.egg
-*.whl
-.eggs/
-pip-wheel-metadata/
-MANIFEST
+bin/
+obj/
+*.exe
+*.dll
+*.so
+*.o
+*.obj
+.cache/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
-# ── Test, Coverage & QA Residue ─────────────────────────────────
-.pytest_cache/
-.tox/
-.hypothesis/
-.coverage
-coverage.xml
-htmlcov/
-nosetests.xml
-test-results/
-*.cover
-
-# ── Generated Output & Large Binaries ───────────────────────────
-*.mp4
-*.mp3
-*.wav
-*.avi
-*.mov
-*.mkv
-*.zip
-*.tar.gz
-*.tar.bz2
-*.rar
-*.7z
-output/
-generated/
-renders/
-episodes/
-daily-episode-*/
-latest_run/
-.tmp.driveupload/
-rhubarb.zip
-
-# ── Temporary & Residual Files ───────────────────────────────────
-*.tmp
-*.temp
-*.bak
-*.backup
-*.swp
-*.swo
-*~
-*.orig
-*.rej
+# Logs & temp
 *.log
-logs/
 tmp/
 temp/
-scratch/
-
-# ── OS Noise ─────────────────────────────────────────────────────
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-desktop.ini
-
-# ── Editor & IDE Noise ───────────────────────────────────────────
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-.project
-.classpath
-
-# ── Node / JS (if applicable) ────────────────────────────────────
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.npm
-.yarn-integrity
-
-# ── GitHub Actions Cache ─────────────────────────────────────────
-.cache/
-*.cache
