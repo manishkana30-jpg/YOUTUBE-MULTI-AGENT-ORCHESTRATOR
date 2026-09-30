@@ -1,7 +1,7 @@
 {
   "name": "youtube-auto-orchestrator",
   "version": "1.0.0",
-  "description": "Antigravity YouTube Multi-Agent Orchestrator powered by Gemini, Supabase, and Node-CRON",
+  "description": "YouTube Multi-Agent Orchestrator powered by Gemini, Supabase, and Node-CRON",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

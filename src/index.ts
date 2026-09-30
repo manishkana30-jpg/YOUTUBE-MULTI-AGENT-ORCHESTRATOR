@@ -286,7 +286,7 @@ app.get(['/auth/youtube/callback', '/api/auth/youtube/callback'], async (req: Re
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Channel Connected — Antigravity</title>
+  <title>YouTube Channel Connected — YouTube Multi-Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -512,7 +512,7 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antigravity YouTube Multi-Agent Orchestrator</title>
+  <title>YouTube Multi-Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -629,7 +629,7 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
   <div class="container">
     <header>
       <div>
-        <h1><span>Antigravity</span> YouTube Multi-Agent</h1>
+        <h1><span>YouTube</span> Multi-Agent</h1>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
           Autonomous Production Pipeline &bull; Gemini 2.5 &bull; Supabase &bull; MCP SerpApi
         </p>

@@ -10,7 +10,7 @@ export default function handler(req, res) {
     res.end(`
       <!DOCTYPE html>
       <html>
-        <head><title>Antigravity Serverless Error</title></head>
+        <head><title>YouTube Multi-Agent Error</title></head>
         <body style="font-family: sans-serif; background: #090A0F; color: #FFF; padding: 3rem; text-align: center;">
           <h2 style="color: #FF2A55;">Serverless Execution Error</h2>
           <p style="color: #9CA3AF;">${err?.message || err}</p>
