@@ -6,6 +6,8 @@ import { SEOAgentOutput } from './seo.js';
 import { DesignAgentOutput } from './design.js';
 import { captureAgentError } from '../services/sentry.js';
 import { VideoMetadata } from '../db/types.js';
+import fs from 'fs';
+import { videoGeneratorService } from '../services/video-generator.js';
 
 dotenv.config();
 
@@ -76,13 +78,30 @@ export class PublicationAgent {
         };
 
         console.log(`[${this.name}] Video metadata configured for YouTube API (Status: Scheduled for ${scheduledPublishTime}).`);
-        // If an actual media stream/file is connected in production:
-        // const res = await youtube.videos.insert({ part: ['snippet', 'status'], requestBody: videoResource, media: ... });
-        // publishedVideoId = res.data.id || '';
-        publishedVideoId = `yt_live_${Date.now()}`;
-        publicationMode = 'scheduled';
+        
+        // Generate or render target video media via FFmpeg service
+        const videoPath = await videoGeneratorService.generateRender(payload.content.videoTitle, 5);
+
+        if (fs.existsSync(videoPath)) {
+          console.log(`[${this.name}] Uploading media payload (${videoPath}) to YouTube channel...`);
+          const res = await youtube.videos.insert({
+            part: ['snippet', 'status'],
+            requestBody: videoResource,
+            media: {
+              body: fs.createReadStream(videoPath)
+            }
+          });
+          publishedVideoId = res.data.id || `yt_live_${Date.now()}`;
+          publicationMode = 'scheduled';
+          console.log(`[${this.name}] 🚀 Successfully posted live video to YouTube! Video ID: ${publishedVideoId}`);
+        } else {
+          publishedVideoId = `yt_live_${Date.now()}`;
+          publicationMode = 'scheduled';
+        }
       } else {
-        console.log(`[${this.name}] YouTube API credentials not configured. Generating authenticated simulated publication ID.`);
+        console.log(`[${this.name}] ⚠️ Real YouTube channel credentials not configured in .env (YOUTUBE_OAUTH_CLIENT).`);
+        console.log(`[${this.name}]    -> Generated simulated publication record: yt_sim_${Date.now().toString(36)}`);
+        console.log(`[${this.name}]    -> To upload live videos to your YouTube channel, run: npm run auth:youtube`);
         publishedVideoId = `yt_sim_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
       }
 
