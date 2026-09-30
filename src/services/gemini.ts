@@ -5,18 +5,18 @@ dotenv.config();
 
 export class GeminiService {
   private client: GoogleGenAI | null = null;
-  private modelName: string;
+  private activeModel: string = 'gemini-3.5-flash-lite';
   private hasValidKey: boolean = false;
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY || '';
-    this.modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    this.activeModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 
     if (apiKey && !apiKey.includes('your_gemini_api_key')) {
       try {
         this.client = new GoogleGenAI({ apiKey });
         this.hasValidKey = true;
-        console.log(`[Gemini] Initialized Google GenAI SDK with model: ${this.modelName}`);
+        console.log(`[Gemini] Initialized Google GenAI SDK with active model: ${this.activeModel}`);
       } catch (err) {
         console.warn('[Gemini] Initialization error:', err);
       }
@@ -31,11 +31,13 @@ export class GeminiService {
     temperature = 0.4
   ): Promise<T> {
     if (this.hasValidKey && this.client) {
+      // Prioritize active model and fast reliable production models
       const candidateModels = Array.from(new Set([
-        this.modelName,
+        this.activeModel,
         'gemini-3.5-flash-lite',
-        'gemini-3.1-flash-lite',
-        'gemini-3.5-flash'
+        'gemini-3.8-flash',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash'
       ]));
 
       let lastError: any = null;
@@ -52,11 +54,18 @@ export class GeminiService {
           });
 
           const text = response.text || '';
-          const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          const firstBrace = cleaned.indexOf('{');
+          const lastBrace = cleaned.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+          }
+          // Lock onto successful model to eliminate failover latency in subsequent agent steps
+          this.activeModel = model;
           return JSON.parse(cleaned) as T;
         } catch (err: any) {
           lastError = err;
-          console.warn(`[Gemini] Model ${model} encountered an issue (${err.message || err.status || 'unknown'}). Trying next candidate model...`);
+          console.warn(`[Gemini] Model ${model} unavailable (${err?.message || err?.status || '503'}). Fast-switching to next candidate...`);
         }
       }
 
@@ -69,3 +78,4 @@ export class GeminiService {
 }
 
 export const geminiService = new GeminiService();
+

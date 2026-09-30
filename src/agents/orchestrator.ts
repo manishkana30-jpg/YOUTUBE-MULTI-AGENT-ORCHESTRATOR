@@ -73,11 +73,12 @@ export class MasterOrchestrator {
           // Step 1: Content Agent
           const contentOutput = await contentAgent.execute(brief.topic_brief, currentTemp);
 
-          // Step 2: SEO Agent
-          const seoOutput = await seoAgent.execute(contentOutput, currentTemp);
-
-          // Step 3: Design Agent
-          const designOutput = await designAgent.execute(contentOutput, seoOutput, currentTemp);
+          // Step 2 & 3: Run SEO Agent and Design Agent in parallel to minimize latency
+          console.log(`[${this.name}] Running SEO Agent & Design Agent concurrently in parallel...`);
+          const [seoOutput, designOutput] = await Promise.all([
+            seoAgent.execute(contentOutput, currentTemp),
+            designAgent.execute(contentOutput, undefined, currentTemp)
+          ]);
 
           // Step 4: Consolidate Payload
           const consolidated: ConsolidatedPayload = {

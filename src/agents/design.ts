@@ -22,7 +22,7 @@ export class DesignAgent {
 
   public async execute(
     content: ContentAgentOutput,
-    seo: SEOAgentOutput,
+    seo?: SEOAgentOutput,
     temperature = 0.4
   ): Promise<DesignAgentOutput> {
     const startTime = Date.now();
@@ -41,10 +41,11 @@ Respond STRICTLY with a valid JSON object matching this schema:
   "contrast_rating": "A+ (98% contrast against dark YouTube mobile theme)"
 }`;
 
+    const topKeywords = seo?.tags?.length ? seo.tags.slice(0, 5).join(', ') : content.videoTitle;
     const userPrompt = `VIDEO DATA:
 Title: ${content.videoTitle}
 Description Hook: ${content.description.substring(0, 150)}
-Top SEO Keywords: ${seo.tags.slice(0, 5).join(', ')}
+Top SEO Keywords: ${topKeywords}
 
 Design a thumb-stopping visual specification for the downstream image generation pipeline now.`;
 

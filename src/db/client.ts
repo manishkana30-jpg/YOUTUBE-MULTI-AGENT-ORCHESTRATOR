@@ -70,12 +70,21 @@ function initLocalStore(): LocalStore {
   return defaultStore;
 }
 
+let saveTimer: NodeJS.Timeout | null = null;
 function saveLocalStore(store: LocalStore) {
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(store, null, 2), 'utf-8');
-  } catch (err) {
-    // Gracefully handle read-only filesystem on serverless
+  if (store.agent_logs.length > 250) {
+    store.agent_logs = store.agent_logs.slice(0, 250);
+  }
+  if (!saveTimer) {
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      try {
+        if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+        fs.writeFile(LOCAL_DB_PATH, JSON.stringify(store), 'utf-8', () => {});
+      } catch {
+        // Gracefully handle read-only filesystem on serverless
+      }
+    }, 100);
   }
 }
 
