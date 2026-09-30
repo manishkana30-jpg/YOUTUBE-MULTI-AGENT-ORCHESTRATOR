@@ -93,9 +93,17 @@ async function startOAuthFlow() {
 
   const server = http.createServer(async (req, res) => {
     try {
-      if (req.url && req.url.startsWith('/oauth2callback')) {
+      if (req.url && (req.url.startsWith('/oauth2callback') || req.url.includes('code=') || req.url.includes('error='))) {
         const queryParams = new url.URL(req.url, `http://localhost:${PORT}`).searchParams;
         const code = queryParams.get('code');
+        const errorParam = queryParams.get('error');
+
+        if (errorParam) {
+          res.writeHead(400, { 'Content-Type': 'text/html' });
+          res.end(`<h1>Authentication Error: ${errorParam}</h1>`);
+          console.error('[OAuth] Google error received:', errorParam);
+          return;
+        }
 
         if (!code) {
           res.writeHead(400, { 'Content-Type': 'text/html' });
