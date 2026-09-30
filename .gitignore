@@ -29,6 +29,7 @@ obj/
 data/*.json
 data/renders/
 *.mp4
+!assets/fallback.mp4
 *.log
 tmp/
 temp/
