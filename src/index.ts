@@ -26,6 +26,21 @@ function getRedirectUri(req: Request): string {
   return `${protocol}://${host}/auth/youtube/callback`;
 }
 
+function getGoogleCredentials() {
+  let clientId = process.env.GOOGLE_CLIENT_ID || '';
+  let clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+
+  if ((!clientId || !clientSecret) && process.env.YOUTUBE_OAUTH_CLIENT) {
+    try {
+      const parsed = JSON.parse(process.env.YOUTUBE_OAUTH_CLIENT);
+      clientId = clientId || parsed.client_id || '';
+      clientSecret = clientSecret || parsed.client_secret || '';
+    } catch {}
+  }
+
+  return { clientId, clientSecret };
+}
+
 function getConnectedChannel(): { isConnected: boolean; title?: string; id?: string } {
   try {
     const raw = process.env.YOUTUBE_OAUTH_CLIENT;
@@ -109,8 +124,7 @@ app.get(['/api/calendar', '/calendar'], async (req: Request, res: Response) => {
 
 // 5. YouTube OAuth Web App - Initiation Endpoint (Works on Vercel & Local)
 app.get(['/auth/youtube', '/api/auth/youtube'], (req: Request, res: Response) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID || '';
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+  const { clientId, clientSecret } = getGoogleCredentials();
 
   if (!clientId || !clientSecret) {
     return res.status(500).send(`
@@ -206,8 +220,7 @@ app.get(['/auth/youtube/callback', '/api/auth/youtube/callback'], async (req: Re
   }
 
   try {
-    const clientId = process.env.GOOGLE_CLIENT_ID || '';
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    const { clientId, clientSecret } = getGoogleCredentials();
     const redirectUri = getRedirectUri(req);
 
     const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
