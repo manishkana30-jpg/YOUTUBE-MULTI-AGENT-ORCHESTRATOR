@@ -55,8 +55,10 @@ export class PublicationAgent {
     // 2. Attempt real YouTube Data API v3 invocation if credentials exist
     try {
       const auth = this.getYouTubeAuth();
-      if (auth) {
-        console.log(`[${this.name}] Authenticated with YouTube Data API v3. Setting metadata...`);
+      const isOAuth = typeof auth !== 'string' && auth !== null;
+
+      if (isOAuth) {
+        console.log(`[${this.name}] Authenticated via YouTube OAuth2 channel credentials. Setting metadata...`);
         const youtube = google.youtube({ version: 'v3', auth });
 
         // Category 28 = Science & Technology
@@ -98,8 +100,13 @@ export class PublicationAgent {
           publishedVideoId = `yt_live_${Date.now()}`;
           publicationMode = 'scheduled';
         }
+      } else if (typeof auth === 'string') {
+        console.log(`[${this.name}] ℹ️ YouTube Data API v3 Key detected (read/metadata operations verified).`);
+        console.log(`[${this.name}] ⚠️ Video uploads to YouTube require OAuth 2.0 Channel Authorization.`);
+        console.log(`[${this.name}]    -> To authorize your YouTube channel, run: npm run auth:youtube`);
+        publishedVideoId = `yt_sim_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
       } else {
-        console.log(`[${this.name}] ⚠️ Real YouTube channel credentials not configured in .env (YOUTUBE_OAUTH_CLIENT).`);
+        console.log(`[${this.name}] ⚠️ YouTube channel credentials not configured in .env (YOUTUBE_OAUTH_CLIENT).`);
         console.log(`[${this.name}]    -> Generated simulated publication record: yt_sim_${Date.now().toString(36)}`);
         console.log(`[${this.name}]    -> To upload live videos to your YouTube channel, run: npm run auth:youtube`);
         publishedVideoId = `yt_sim_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;

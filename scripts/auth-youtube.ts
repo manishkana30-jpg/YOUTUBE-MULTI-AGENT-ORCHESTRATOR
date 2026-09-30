@@ -62,11 +62,24 @@ async function startOAuthFlow() {
     console.log('4. Paste your Client ID and Client Secret below:\n');
 
     clientId = await promptInput('Enter your Google Client ID: ');
+    if (clientId.startsWith('AIzaSy')) {
+      console.log('\n⚠️ Note: You entered an API Key (starts with "AIzaSy...").');
+      console.log('An API Key is already configured in your .env (YOUTUBE_API_KEY).');
+      console.log('For uploading videos, Google requires an OAuth 2.0 Client ID, which looks like:');
+      console.log('  -> 279680294004-xxxxxx.apps.googleusercontent.com');
+      console.log('You can generate one in 30 seconds:');
+      console.log('  1. Open: https://console.cloud.google.com/apis/credentials');
+      console.log('  2. Click "+ CREATE CREDENTIALS" -> "OAuth client ID"');
+      console.log('  3. Select Application type: "Desktop app"');
+      console.log('  4. Copy the Client ID and Client Secret.\n');
+      clientId = await promptInput('Please enter your Google OAuth Client ID: ');
+    }
     clientSecret = await promptInput('Enter your Google Client Secret: ');
   }
 
-  if (!clientId || !clientSecret) {
-    console.error('[Error] Client ID and Client Secret are required.');
+  if (!clientId || !clientSecret || clientId.startsWith('AIzaSy')) {
+    console.error('\n[Error] Valid OAuth 2.0 Client ID and Client Secret are required.');
+    console.error('Client ID must end with .apps.googleusercontent.com');
     process.exit(1);
   }
 
