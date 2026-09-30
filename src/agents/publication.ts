@@ -85,17 +85,93 @@ export class PublicationAgent {
         const videoPath = await videoGeneratorService.generateRender(payload.content.videoTitle, 5);
 
         if (fs.existsSync(videoPath)) {
-          console.log(`[${this.name}] Uploading media payload (${videoPath}) to YouTube channel...`);
-          const res = await youtube.videos.insert({
-            part: ['snippet', 'status'],
-            requestBody: videoResource,
-            media: {
-              body: fs.createReadStream(videoPath)
+          const fileSizeBytes = fs.statSync(videoPath).size;
+          console.log(`[${this.name}] 🎬 Preparing YouTube Data API v3 upload stream...`);
+          console.log(`[${this.name}] Target File: ${videoPath} (${(fileSizeBytes / 1024).toFixed(1)} KB)`);
+          console.log(`[${this.name}] Request Snippet:`, JSON.stringify(videoResource.snippet, null, 2));
+
+          // 1. Proactively verify and refresh OAuth token
+          try {
+            console.log(`[${this.name}] Verifying OAuth2 access token with Google...`);
+            const tokenResponse = await (auth as any).getAccessToken();
+            if (!tokenResponse?.token) {
+              throw new Error('OAuth access token could not be acquired. Check refresh token validity.');
             }
-          });
-          publishedVideoId = res.data.id || `yt_live_${Date.now()}`;
-          publicationMode = 'scheduled';
-          console.log(`[${this.name}] 🚀 Successfully posted live video to YouTube! Video ID: ${publishedVideoId}`);
+            console.log(`[${this.name}] ✅ OAuth2 access token verified and active.`);
+          } catch (tokenErr: any) {
+            const tokenErrData = tokenErr.response?.data;
+            console.error(`[${this.name}] ❌ Google OAuth token validation failed!`);
+            console.error(`[${this.name}] Token Error Message:`, tokenErr?.message);
+            if (tokenErrData) {
+              console.error(`[${this.name}] Token err.response.data:`, JSON.stringify(tokenErrData, null, 2));
+            }
+            if (tokenErrData?.error === 'invalid_grant' || /invalid_grant/i.test(tokenErr?.message)) {
+              console.error(`[${this.name}] 🚨 CRITICAL: OAuth refresh token has expired or was revoked (invalid_grant). Re-connect your YouTube channel via the dashboard.`);
+            }
+            throw new Error(`Google OAuth Token Refresh Failed: ${tokenErrData?.error_description || tokenErr?.message || 'invalid_grant'}`);
+          }
+
+          // 2. Perform videos.insert with verbose error capture
+          try {
+            console.log(`[${this.name}] Streaming media payload (${videoPath}) to YouTube channel via fs.createReadStream()...`);
+            const res = await youtube.videos.insert({
+              part: ['snippet', 'status'],
+              requestBody: videoResource,
+              media: {
+                body: fs.createReadStream(videoPath)
+              }
+            });
+
+            console.log(`[${this.name}] YouTube API Raw Response Status: ${res.status} ${res.statusText}`);
+            console.log(`[${this.name}] YouTube API Upload Response:`, JSON.stringify(res.data, null, 2));
+
+            publishedVideoId = res.data.id || `yt_live_${Date.now()}`;
+            publicationMode = 'scheduled';
+            console.log(`[${this.name}] 🚀 Successfully posted live video to YouTube! Video ID: ${publishedVideoId}`);
+          } catch (uploadErr: any) {
+            const status = uploadErr.response?.status || uploadErr.code || 500;
+            const responseData = uploadErr.response?.data;
+            const errorObj = responseData?.error;
+            const errorReason = errorObj?.errors?.[0]?.reason || responseData?.error || 'unknown_reason';
+            const errorMessage = errorObj?.message || uploadErr.message;
+
+            console.error(`\n======================================================`);
+            console.error(`[${this.name}] ❌ YOUTUBE UPLOAD API FAILED!`);
+            console.error(`[${this.name}] HTTP Status Code: ${status}`);
+            console.error(`[${this.name}] Error Reason: ${errorReason}`);
+            console.error(`[${this.name}] Error Message: ${errorMessage}`);
+            console.error(`[${this.name}] err.response.data:`, JSON.stringify(responseData, null, 2));
+            console.error(`======================================================\n`);
+
+            // Detailed diagnostics for critical failure points
+            if (status === 403 || errorReason === 'quotaExceeded') {
+              console.error(`[${this.name}] 🚨 CRITICAL: YouTube API Quota Exceeded (quotaExceeded)!`);
+              console.error(`[${this.name}]    Google Cloud projects have a default quota of 10,000 units/day.`);
+              console.error(`[${this.name}]    A single videos.insert call costs 1,600 units.`);
+              console.error(`[${this.name}]    Wait until quota resets at midnight PST or request a quota increase in Google Cloud Console.`);
+            } else if (status === 401 || errorReason === 'invalid_grant') {
+              console.error(`[${this.name}] 🚨 CRITICAL: OAuth token is expired or revoked (invalid_grant)!`);
+              console.error(`[${this.name}]    Click "Connect YouTube Channel" on the dashboard to generate a fresh token.`);
+            } else if (status === 400 || errorReason === 'uploadLimitExceeded') {
+              console.error(`[${this.name}] 🚨 CRITICAL: YouTube channel daily upload limit reached for unverified channel!`);
+            }
+
+            // Log detailed failure to database logs
+            await db.logAgentExecution({
+              agent_name: this.name,
+              execution_time: Date.now() - startTime,
+              payload: {
+                title: payload.content.videoTitle,
+                httpStatus: status,
+                errorReason,
+                rawGoogleError: responseData || uploadErr.message
+              },
+              status: 'failure',
+              error_message: `YouTube API ${status} [${errorReason}]: ${errorMessage}`
+            });
+
+            throw new Error(`YouTube API Upload Failed [${status} - ${errorReason}]: ${errorMessage}`);
+          }
         } else {
           publishedVideoId = `yt_live_${Date.now()}`;
           publicationMode = 'scheduled';
@@ -103,12 +179,12 @@ export class PublicationAgent {
       } else if (typeof auth === 'string') {
         console.log(`[${this.name}] ℹ️ YouTube Data API v3 Key detected (read/metadata operations verified).`);
         console.log(`[${this.name}] ⚠️ Video uploads to YouTube require OAuth 2.0 Channel Authorization.`);
-        console.log(`[${this.name}]    -> To authorize your YouTube channel, run: npm run auth:youtube`);
+        console.log(`[${this.name}]    -> To authorize your YouTube channel, click "Connect YouTube Channel" on the dashboard.`);
         publishedVideoId = `yt_sim_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
       } else {
-        console.log(`[${this.name}] ⚠️ YouTube channel credentials not configured in .env (YOUTUBE_OAUTH_CLIENT).`);
+        console.log(`[${this.name}] ⚠️ YouTube channel credentials not configured (YOUTUBE_OAUTH_CLIENT).`);
         console.log(`[${this.name}]    -> Generated simulated publication record: yt_sim_${Date.now().toString(36)}`);
-        console.log(`[${this.name}]    -> To upload live videos to your YouTube channel, run: npm run auth:youtube`);
+        console.log(`[${this.name}]    -> To upload live videos to your YouTube channel, click "Connect YouTube Channel" on the dashboard.`);
         publishedVideoId = `yt_sim_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
       }
 
@@ -176,10 +252,20 @@ export class PublicationAgent {
         if (parsed.client_id && parsed.client_secret && parsed.refresh_token) {
           const oauth2Client = new google.auth.OAuth2(
             parsed.client_id,
-            parsed.client_secret,
-            'https://developers.google.com/oauthplayground'
+            parsed.client_secret
           );
           oauth2Client.setCredentials({ refresh_token: parsed.refresh_token });
+          oauth2Client.on('tokens', (newTokens) => {
+            console.log(`[${this.name}] 🔄 Received refreshed tokens from Google:`, {
+              hasAccessToken: !!newTokens.access_token,
+              hasRefreshToken: !!newTokens.refresh_token,
+              expiryDate: newTokens.expiry_date
+            });
+            if (newTokens.refresh_token) {
+              parsed.refresh_token = newTokens.refresh_token;
+              process.env.YOUTUBE_OAUTH_CLIENT = JSON.stringify(parsed);
+            }
+          });
           return oauth2Client;
         }
       } catch (err) {

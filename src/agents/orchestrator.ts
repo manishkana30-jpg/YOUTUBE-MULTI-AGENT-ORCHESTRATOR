@@ -145,6 +145,13 @@ export class MasterOrchestrator {
             status: 'retry',
             error_message: err?.message || 'Unknown pipeline failure'
           });
+
+          // Abort retry loop immediately on permanent unrecoverable errors like quota exhaustion or invalid auth
+          const isNonRetryable = /quotaExceeded|quota|invalid_grant|uploadLimitExceeded|403|401/i.test(err?.message || '');
+          if (isNonRetryable) {
+            console.error(`[${this.name}] 🛑 Halting retries immediately: Non-retryable error detected (${err.message})`);
+            break;
+          }
         }
       }
 

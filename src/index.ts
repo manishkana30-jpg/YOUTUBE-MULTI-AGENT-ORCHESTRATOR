@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { masterOrchestrator } from './agents/orchestrator.js';
 import { db } from './db/client.js';
+import { waitUntil } from '@vercel/functions';
 
 dotenv.config();
 
@@ -100,11 +101,12 @@ app.get(['/health', '/api/health'], async (req: Request, res: Response) => {
   });
 });
 
-// 2. Trigger Orchestrator Pipeline API
+// 2. Trigger Orchestrator Pipeline API (202 Accepted Background Execution - 504 Timeout Fix)
 app.post(['/api/orchestrate/run', '/orchestrate/run'], async (req: Request, res: Response) => {
   try {
     const { channelId, brief } = req.body;
-    console.log('[API] Manual orchestration trigger requested.');
+    const jobId = `job_${Date.now()}`;
+    console.log(`[API] Orchestration triggered (Job ID: ${jobId}). Executing asynchronously...`);
 
     if (brief) {
       const channels = await db.fetchActiveChannels();
@@ -112,18 +114,35 @@ app.post(['/api/orchestrate/run', '/orchestrate/run'], async (req: Request, res:
       await db.createBrief(targetChannel, brief);
     }
 
-    // Run in background and return immediate response or await completion
-    const results = await masterOrchestrator.runDailyPipeline(channelId);
-    res.json({
+    // 1. Immediately return HTTP 202 Accepted so client / Vercel proxy never times out (504 fix)
+    res.status(202).json({
       success: true,
-      message: 'Pipeline executed successfully',
-      count: results.length,
-      results
+      status: 'accepted',
+      jobId,
+      message: 'Pipeline execution started in the background. Stream logs at /api/logs',
+      checkLogsUrl: '/api/logs'
     });
+
+    // 2. Background task kept alive by @vercel/functions waitUntil
+    const backgroundTask = (async () => {
+      try {
+        console.log(`[Background Job ${jobId}] Starting multi-agent pipeline...`);
+        const results = await masterOrchestrator.runDailyPipeline(channelId);
+        console.log(`[Background Job ${jobId}] Multi-agent run completed successfully (${results.length} video(s)).`);
+      } catch (err: any) {
+        console.error(`[Background Job ${jobId}] Pipeline execution error:`, err?.message || err);
+      }
+    })();
+
+    try {
+      waitUntil(backgroundTask);
+    } catch {
+      backgroundTask.catch(err => console.error('[Background Task Fallback Error]', err));
+    }
   } catch (err: any) {
     res.status(500).json({
       success: false,
-      error: err?.message || 'Pipeline execution failed'
+      error: err?.message || 'Failed to trigger pipeline'
     });
   }
 });
@@ -950,20 +969,99 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
       } catch {}
     })();
 
+    let logPollInterval = null;
+
     async function triggerPipeline() {
-      const btn = document.querySelector('.btn');
-      btn.innerText = '⚡ Orchestrating Agents...';
-      btn.disabled = true;
+      const btn = document.querySelector('button[onclick="triggerPipeline()"]') || document.querySelector('.btn');
+      const originalText = btn ? btn.innerHTML : '<span>⚡ Trigger Pipeline Now</span>';
+      if (btn) {
+        btn.innerHTML = '<span>⚡ Running in Background...</span>';
+        btn.disabled = true;
+      }
+
+      // Create or update real-time execution banner
+      let banner = document.getElementById('pipelineLiveBanner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'pipelineLiveBanner';
+        banner.style.cssText = 'background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;';
+        const container = document.querySelector('.container');
+        const grid = document.querySelector('.grid');
+        if (container && grid) container.insertBefore(banner, grid);
+      }
+      banner.innerHTML = '<div style="display:flex;align-items:center;gap:0.75rem;">'
+        + '<div class="badge-dot" style="background:#818CF8;box-shadow:0 0 10px #818CF8;"></div>'
+        + '<div>'
+        + '<div style="font-weight:700;color:#FFF;font-size:0.95rem;">Multi-Agent Pipeline Active (202 Accepted)</div>'
+        + '<div style="font-size:0.82rem;color:#9CA3AF;margin-top:0.15rem;">Gemini Scripting &bull; SEO &bull; Media Render &bull; YouTube Upload Stream</div>'
+        + '</div></div>'
+        + '<div style="font-size:0.8rem;color:#818CF8;font-family:var(--mono);">Streaming Live Logs...</div>';
+
       try {
-        const res = await fetch('/api/orchestrate/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        const res = await fetch('/api/orchestrate/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
         const data = await res.json();
-        alert('Pipeline completed successfully! Processed: ' + data.count + ' video(s).');
-        window.location.reload();
+        console.log('[Pipeline Trigger Response]', data);
+
+        // Start polling logs every 2.5 seconds
+        if (logPollInterval) clearInterval(logPollInterval);
+        let pollCount = 0;
+        logPollInterval = setInterval(async () => {
+          pollCount++;
+          try {
+            const logsRes = await fetch('/api/logs?limit=15');
+            const logsData = await logsRes.json();
+            if (logsData && logsData.logs && logsData.logs.length > 0) {
+              const tbody = document.querySelector('tbody');
+              if (tbody) {
+                tbody.innerHTML = logsData.logs.map(function(l) {
+                  var time = new Date(l.created_at || '').toLocaleTimeString();
+                  var details = l.error_message || (l.payload && l.payload.finalTitle ? l.payload.finalTitle : JSON.stringify(l.payload).substring(0, 70) + '...');
+                  return '<tr>'
+                    + '<td class="mono" style="color:var(--text-muted);">' + time + '</td>'
+                    + '<td style="font-weight:600;">' + l.agent_name + '</td>'
+                    + '<td class="mono">' + l.execution_time + 'ms</td>'
+                    + '<td><span class="pill pill-' + l.status + '">' + l.status.toUpperCase() + '</span></td>'
+                    + '<td style="color:var(--text-muted);font-size:0.8rem;">' + details + '</td>'
+                    + '</tr>';
+                }).join('');
+              }
+
+              // Check if Master Orchestrator or Publication Agent has logged completion
+              const latestLog = logsData.logs[0];
+              if (latestLog && (latestLog.agent_name === 'Master Orchestrator' || latestLog.agent_name === 'Publication Agent')) {
+                if (latestLog.status === 'success') {
+                  banner.style.background = 'rgba(16, 185, 129, 0.15)';
+                  banner.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                  banner.innerHTML = '<div style="color:#34D399;font-weight:700;">🚀 Pipeline Completed Successfully! Video published / scheduled to YouTube.</div>';
+                  clearInterval(logPollInterval);
+                  if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+                } else if (latestLog.status === 'failure') {
+                  banner.style.background = 'rgba(239, 68, 68, 0.15)';
+                  banner.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                  banner.innerHTML = '<div style="color:#F87171;font-weight:700;">❌ Pipeline Execution Stopped: ' + (latestLog.error_message || 'Error') + '</div>';
+                  clearInterval(logPollInterval);
+                  if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Log poll error:', e);
+          }
+
+          // Timeout polling after 90 seconds
+          if (pollCount > 36) {
+            clearInterval(logPollInterval);
+            if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+          }
+        }, 2500);
+
       } catch (err) {
         alert('Error triggering pipeline: ' + err.message);
-      } finally {
-        btn.innerText = '⚡ Trigger Pipeline Now';
-        btn.disabled = false;
+        if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
       }
     }
   </script>

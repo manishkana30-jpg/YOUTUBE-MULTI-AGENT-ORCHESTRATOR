@@ -27,6 +27,8 @@ obj/
 
 # Logs & temp
 data/*.json
+data/renders/
+*.mp4
 *.log
 tmp/
 temp/

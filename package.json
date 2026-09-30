@@ -29,6 +29,7 @@
     "@google/genai": "^2.24.0",
     "@sentry/node": "^8.47.0",
     "@supabase/supabase-js": "^2.48.0",
+    "@vercel/functions": "^3.9.9",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
