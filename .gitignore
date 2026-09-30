@@ -1,4 +1,6 @@
 # Environments & Dependencies
+.env
+.env.local
 .venv/
 env/
 venv/
@@ -23,6 +25,7 @@ obj/
 !.vscode/tasks.json
 
 # Logs & temp
+data/*.json
 *.log
 tmp/
 temp/

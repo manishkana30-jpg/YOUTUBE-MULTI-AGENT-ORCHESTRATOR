@@ -1,0 +1,59 @@
+services:
+  # 1. Dedicated 24/7 CRON Background Worker Process
+  - type: worker
+    name: youtube-multiagent-worker
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CRON_SCHEDULE
+        value: "0 9 * * *" # Daily at 09:00 UTC
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: "gemini-2.5-flash"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: YOUTUBE_OAUTH_CLIENT
+        sync: false
+      - key: SERPAPI_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+  # 2. Web API & Monitoring Dashboard Service
+  - type: web
+    name: youtube-orchestrator-dashboard
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: ENABLE_CRON
+        value: "false" # Worker handles CRON; Web handles API & Dashboard
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: YOUTUBE_OAUTH_CLIENT
+        sync: false
+      - key: SERPAPI_KEY
+        sync: false
