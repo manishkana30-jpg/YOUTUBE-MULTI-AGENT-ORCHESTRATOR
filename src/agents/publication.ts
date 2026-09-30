@@ -169,9 +169,10 @@ export class PublicationAgent {
   }
 
   private getYouTubeAuth(): any {
-    if (this.oauthClientJson && !this.oauthClientJson.includes('your_client_id')) {
+    const oauthJson = process.env.YOUTUBE_OAUTH_CLIENT || this.oauthClientJson;
+    if (oauthJson && !oauthJson.includes('your_client_id')) {
       try {
-        const parsed = JSON.parse(this.oauthClientJson);
+        const parsed = JSON.parse(oauthJson);
         if (parsed.client_id && parsed.client_secret && parsed.refresh_token) {
           const oauth2Client = new google.auth.OAuth2(
             parsed.client_id,

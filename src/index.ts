@@ -48,9 +48,21 @@ function getGoogleCredentials() {
   return { clientId, clientSecret };
 }
 
-function getConnectedChannel(): { isConnected: boolean; title?: string; id?: string } {
+function getConnectedChannel(req?: Request): { isConnected: boolean; title?: string; id?: string } {
   try {
-    const raw = process.env.YOUTUBE_OAUTH_CLIENT;
+    let raw = process.env.YOUTUBE_OAUTH_CLIENT;
+
+    // Check request cookies if process.env is empty or has no refresh_token
+    if ((!raw || raw.includes('"refresh_token":""')) && req?.headers?.cookie) {
+      const match = req.headers.cookie.match(/youtube_oauth_client=([^;]+)/);
+      if (match) {
+        try {
+          raw = decodeURIComponent(match[1]);
+          process.env.YOUTUBE_OAUTH_CLIENT = raw;
+        } catch {}
+      }
+    }
+
     if (raw && !raw.includes('"client_id":""')) {
       const parsed = JSON.parse(raw);
       if (parsed.refresh_token) {
@@ -408,6 +420,9 @@ app.get(['/auth/youtube/callback', '/api/auth/youtube/callback'], async (req: Re
     const oauthString = JSON.stringify(oauthConfig);
     process.env.YOUTUBE_OAUTH_CLIENT = oauthString;
 
+    // Set cookie for automatic browser persistence across serverless requests
+    res.setHeader('Set-Cookie', `youtube_oauth_client=${encodeURIComponent(oauthString)}; Path=/; Max-Age=315360000; SameSite=Lax`);
+
     // Persist to local .env if writable
     try {
       const envPath = path.resolve(process.cwd(), '.env');
@@ -616,6 +631,11 @@ app.get(['/auth/youtube/callback', '/api/auth/youtube/callback'], async (req: Re
   </div>
 
   <script>
+    try {
+      localStorage.setItem('youtube_oauth_client', ${JSON.stringify(oauthString)});
+      document.cookie = "youtube_oauth_client=" + encodeURIComponent(${JSON.stringify(oauthString)}) + "; path=/; max-age=315360000; SameSite=Lax";
+    } catch {}
+
     function copyEnvVar() {
       const text = 'YOUTUBE_OAUTH_CLIENT=' + ${JSON.stringify(oauthString)};
       navigator.clipboard.writeText(text).then(() => {
@@ -656,7 +676,7 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
   const stats = await db.getSystemStats();
   const logs = await db.getRecentLogs(15);
   const channels = await db.fetchActiveChannels();
-  const connectedChannel = getConnectedChannel();
+  const connectedChannel = getConnectedChannel(req);
   const currentRedirectUri = getRedirectUri(req);
 
   const html = `<!DOCTYPE html>
@@ -920,6 +940,16 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
   </div>
 
   <script>
+    (function syncStorageCookie() {
+      try {
+        const stored = localStorage.getItem('youtube_oauth_client');
+        if (stored && !document.cookie.includes('youtube_oauth_client=')) {
+          document.cookie = 'youtube_oauth_client=' + encodeURIComponent(stored) + '; path=/; max-age=315360000; SameSite=Lax';
+          window.location.reload();
+        }
+      } catch {}
+    })();
+
     async function triggerPipeline() {
       const btn = document.querySelector('.btn');
       btn.innerText = '⚡ Orchestrating Agents...';
