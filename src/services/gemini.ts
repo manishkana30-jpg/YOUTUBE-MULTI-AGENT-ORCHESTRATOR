@@ -31,24 +31,37 @@ export class GeminiService {
     temperature = 0.4
   ): Promise<T> {
     if (this.hasValidKey && this.client) {
-      try {
-        const response = await this.client.models.generateContent({
-          model: this.modelName,
-          contents: prompt,
-          config: {
-            systemInstruction: systemInstruction || 'You are an expert AI YouTube production orchestrator. Respond strictly with valid JSON only.',
-            responseMimeType: 'application/json',
-            temperature
-          }
-        });
+      const candidateModels = Array.from(new Set([
+        this.modelName,
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash'
+      ]));
 
-        const text = response.text || '';
-        const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleaned) as T;
-      } catch (err: any) {
-        console.warn(`[Gemini] API error (${err.message}). Attempting fallback recovery...`);
-        throw err;
+      let lastError: any = null;
+      for (const model of candidateModels) {
+        try {
+          const response = await this.client.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              systemInstruction: systemInstruction || 'You are an expert AI YouTube production orchestrator. Respond strictly with valid JSON only.',
+              responseMimeType: 'application/json',
+              temperature
+            }
+          });
+
+          const text = response.text || '';
+          const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          return JSON.parse(cleaned) as T;
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`[Gemini] Model ${model} encountered an issue (${err.message || err.status || 'unknown'}). Trying next candidate model...`);
+        }
       }
+
+      console.warn(`[Gemini] All candidate models exhausted. Attempting fallback recovery...`);
+      throw lastError;
     }
 
     throw new Error('GEMINI_API_KEY_UNAVAILABLE');
