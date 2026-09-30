@@ -329,6 +329,10 @@ if (process.env.ENABLE_CRON !== 'false') {
   console.log(`[Server] Automated Node-cron scheduled for: "${CRON_SCHEDULE}" (09:00 UTC)`);
 }
 
-app.listen(PORT, () => {
-  console.log(`[Server] YouTube Multi-Agent Orchestrator listening on http://localhost:${PORT}`);
-});
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`[Server] YouTube Multi-Agent Orchestrator listening on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
