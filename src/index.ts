@@ -45,8 +45,17 @@ function getConnectedChannel(): { isConnected: boolean; title?: string; id?: str
 
 app.use(express.json());
 
+// Vercel path normalization middleware: restores original requested path when rewritten by Vercel
+app.use((req: Request, res: Response, next) => {
+  const matchedPath = (req.headers['x-matched-path'] as string) || (req.headers['x-forwarded-uri'] as string);
+  if (matchedPath && (req.url === '/api' || req.url === '/api/')) {
+    req.url = matchedPath;
+  }
+  next();
+});
+
 // 1. Healthcheck Route
-app.get('/health', async (req: Request, res: Response) => {
+app.get(['/health', '/api/health'], async (req: Request, res: Response) => {
   const stats = await db.getSystemStats();
   res.json({
     status: 'healthy',
@@ -58,7 +67,7 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 // 2. Trigger Orchestrator Pipeline API
-app.post('/api/orchestrate/run', async (req: Request, res: Response) => {
+app.post(['/api/orchestrate/run', '/orchestrate/run'], async (req: Request, res: Response) => {
   try {
     const { channelId, brief } = req.body;
     console.log('[API] Manual orchestration trigger requested.');
@@ -86,14 +95,14 @@ app.post('/api/orchestrate/run', async (req: Request, res: Response) => {
 });
 
 // 3. Query Logs API
-app.get('/api/logs', async (req: Request, res: Response) => {
+app.get(['/api/logs', '/logs'], async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 30;
   const logs = await db.getRecentLogs(limit);
   res.json({ count: logs.length, logs });
 });
 
 // 4. Query Content Calendar API
-app.get('/api/calendar', async (req: Request, res: Response) => {
+app.get(['/api/calendar', '/calendar'], async (req: Request, res: Response) => {
   const briefs = await db.fetchPendingBriefs();
   res.json({ briefs });
 });
@@ -478,8 +487,8 @@ app.get(['/auth/youtube/callback', '/api/auth/youtube/callback'], async (req: Re
   }
 });
 
-// 7. Visual Dashboard UI (Served at \`/\`)
-app.get('/', async (req: Request, res: Response) => {
+// 7. Visual Dashboard UI (Served at `/` and `/api`)
+app.get(['/', '/api'], async (req: Request, res: Response) => {
   const stats = await db.getSystemStats();
   const logs = await db.getRecentLogs(15);
   const channels = await db.fetchActiveChannels();
@@ -743,8 +752,13 @@ app.get('/', async (req: Request, res: Response) => {
   res.send(html);
 });
 
-// Start CRON if enabled
-if (process.env.ENABLE_CRON !== 'false') {
+// Fallback route: Redirect any unhandled paths to dashboard
+app.use((req: Request, res: Response) => {
+  res.redirect('/');
+});
+
+// Start CRON if enabled (disabled in Vercel serverless environment)
+if (process.env.VERCEL !== '1' && process.env.ENABLE_CRON !== 'false') {
   cron.schedule(CRON_SCHEDULE, async () => {
     console.log('[Server CRON] Daily trigger fired at 09:00 UTC.');
     try {
