@@ -20,9 +20,16 @@ const YOUTUBE_SCOPES = [
 ];
 
 function getRedirectUri(req: Request): string {
-  const forwardedProto = req.headers['x-forwarded-proto'];
-  const protocol = forwardedProto ? (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) : req.protocol;
-  const host = req.headers['x-forwarded-host'] || req.get('host');
+  if (process.env.OAUTH_REDIRECT_URI) {
+    return process.env.OAUTH_REDIRECT_URI;
+  }
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    return process.env.GOOGLE_REDIRECT_URI;
+  }
+  const rawProto = req.headers['x-forwarded-proto'];
+  const protocol = typeof rawProto === 'string' ? rawProto.split(',')[0].trim() : (Array.isArray(rawProto) ? rawProto[0] : req.protocol);
+  const rawHost = req.headers['x-forwarded-host'];
+  const host = typeof rawHost === 'string' ? rawHost.split(',')[0].trim() : (req.get('host') || 'localhost:3001');
   return `${protocol}://${host}/auth/youtube/callback`;
 }
 
@@ -154,6 +161,7 @@ app.get(['/auth/youtube', '/api/auth/youtube'], (req: Request, res: Response) =>
   }
 
   const redirectUri = getRedirectUri(req);
+  console.log(`[YouTube OAuth] Initiating flow with redirect URI: ${redirectUri}`);
   const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -162,6 +170,149 @@ app.get(['/auth/youtube', '/api/auth/youtube'], (req: Request, res: Response) =>
   });
 
   res.redirect(authUrl);
+});
+
+// 5b. YouTube OAuth Setup & Fix Guide Endpoint
+app.get(['/auth/youtube/setup', '/api/auth/youtube/setup'], (req: Request, res: Response) => {
+  const { clientId } = getGoogleCredentials();
+  const redirectUri = getRedirectUri(req);
+
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth Setup — YouTube Multi-Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #151828 0%, #090A0F 100%);
+      color: #F3F4F6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      background: rgba(18, 20, 29, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 2.5rem;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+    }
+    h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; color: #FFF; }
+    h1 span { color: #FF2A55; }
+    p { color: #9CA3AF; font-size: 0.92rem; line-height: 1.6; margin-bottom: 1.5rem; }
+    .step {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .step-num {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      background: #FF2A55;
+      color: white;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.5rem;
+    }
+    .step-title { font-weight: 700; font-size: 0.95rem; color: #FFF; margin-bottom: 0.5rem; }
+    .code-box {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #34D399;
+      background: #0D0E15;
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      word-break: break-all;
+      margin-top: 0.5rem;
+    }
+    .copy-btn {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818CF8;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { background: rgba(99, 102, 241, 0.4); }
+    .actions { display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end; }
+    .btn {
+      padding: 0.75rem 1.4rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+    }
+    .btn-primary { background: #FF2A55; color: #FFF; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.08); color: #F3F4F6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Fix <span>Error 400: redirect_uri_mismatch</span></h1>
+    <p>Google requires the exact callback URL to be registered under your Google Cloud Console OAuth 2.0 Client credentials before authorizing access.</p>
+
+    <div class="step">
+      <div class="step-title"><span class="step-num">1</span>Open Google Cloud Console Credentials</div>
+      <p style="margin-bottom: 0.5rem; font-size: 0.85rem;">Go to Google Cloud Credentials and click on your OAuth 2.0 Web Client ID:</p>
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #818CF8; text-decoration: underline; font-size: 0.85rem;">
+        https://console.cloud.google.com/apis/credentials ↗
+      </a>
+      ${clientId ? `<div style="font-size: 0.75rem; color: #9CA3AF; margin-top: 0.35rem;">Client ID: <code>${clientId}</code></div>` : ''}
+    </div>
+
+    <div class="step">
+      <div class="step-title"><span class="step-num">2</span>Add to "Authorized redirect URIs"</div>
+      <p style="margin-bottom: 0.5rem; font-size: 0.85rem;">Scroll down to <strong>Authorized redirect URIs</strong>, click <strong>+ ADD URI</strong>, and paste this exact value:</p>
+      <div class="code-box">
+        <span>${redirectUri}</span>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('${redirectUri}'); this.innerText = '✓ Copied!'; setTimeout(() => this.innerText = 'Copy', 2000);">Copy</button>
+      </div>
+      <div style="font-size: 0.75rem; color: #9CA3AF; margin-top: 0.5rem;">
+        Tip: If running locally, you can also add: <code>http://localhost:3001/auth/youtube/callback</code>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title"><span class="step-num">3</span>Save and Connect</div>
+      <p style="margin-bottom: 0; font-size: 0.85rem;">Click <strong>SAVE</strong> in Google Cloud Console, wait 10 seconds, then click the button below to authorize.</p>
+    </div>
+
+    <div class="actions">
+      <a href="/" class="btn btn-secondary">← Back to Dashboard</a>
+      <a href="/auth/youtube" class="btn btn-primary">Connect Channel Now 🔴</a>
+    </div>
+  </div>
+</body>
+</html>`);
 });
 
 // 6. YouTube OAuth Web App - Callback Endpoint (Works on Vercel & Local)
@@ -506,6 +657,7 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
   const logs = await db.getRecentLogs(15);
   const channels = await db.fetchActiveChannels();
   const connectedChannel = getConnectedChannel();
+  const currentRedirectUri = getRedirectUri(req);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -655,6 +807,32 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
         </button>
       </div>
     </header>
+
+    ${!connectedChannel.isConnected ? `
+      <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+            <span style="background: rgba(239, 68, 68, 0.2); color: #F87171; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 6px;">OAUTH SETUP</span>
+            <span style="font-weight: 700; font-size: 0.95rem; color: #FFF;">Avoid Error 400: redirect_uri_mismatch</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+            Google requires you to whitelist this exact Redirect URI in your Google Cloud Console OAuth Client:
+          </p>
+          <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <code style="font-family: var(--mono); color: #34D399; background: #0D0E15; border: 1px solid rgba(52, 211, 153, 0.3); padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.82rem; word-break: break-all;">${currentRedirectUri}</code>
+            <button onclick="navigator.clipboard.writeText('${currentRedirectUri}'); const btn = this; btn.innerText = '✓ Copied!'; setTimeout(() => btn.innerText = '📋 Copy URI', 2000);" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #FFF; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">
+              📋 Copy URI
+            </button>
+            <a href="/auth/youtube/setup" style="font-size: 0.8rem; color: #818CF8; text-decoration: underline; margin-left: 0.5rem;">View Step-by-Step Guide →</a>
+          </div>
+        </div>
+        <div>
+          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="btn" style="background: linear-gradient(135deg, #6366F1, #4F46E5); padding: 0.65rem 1.1rem; text-decoration: none; font-size: 0.85rem;">
+            <span>Google Cloud Console ↗</span>
+          </a>
+        </div>
+      </div>
+    ` : ''}
 
     <div class="grid">
       <div class="card">
