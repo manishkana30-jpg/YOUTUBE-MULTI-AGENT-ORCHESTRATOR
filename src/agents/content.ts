@@ -52,11 +52,24 @@ export class ContentAgent {
 Your job is topic copywriting, compelling title generation, and writing a 5-part educational video narrative script strictly adhering to this production standard:
 
 VIDEO SCRIPT TEMPLATE (10-15 minutes):
-[INTRO - 1 min] Hook viewers in 3 seconds
-[PROBLEM - 2 min] Make it relatable  
-[SOLUTION - 5-7 min] Teach step-by-step with visuals
-[EXAMPLES - 2 min] Show real proof
-[CTA - 1 min] Tell them what to do next
+[INTRO - 1 min] Hook viewers in 3 seconds (Warm, friendly energy, smile)
+[PROBLEM - 2 min] Make it relatable (Sympathetic, relatable pain)
+[SOLUTION - 5-7 min] Teach step-by-step with visuals (Confident, encouraging)
+[EXAMPLES - 2 min] Show real proof (Proud, genuine excitement)
+[CTA - 1 min] Tell them what to do next (Warm, direct, friendly)
+
+CRITICAL NATURAL VOICEOVER RULES (MANDATORY - AVOID ROBOTIC OUTPUT):
+1. USE CONVERSATIONAL LANGUAGE: Speak like talking to ONE friend across a desk. No academic jargon.
+   - ❌ WRONG: "The fundamental methodology requires systematic implementation"
+   - ✅ RIGHT: "Here's how to get started - it's actually pretty simple"
+2. ADD VOCAL VARIETY & DIRECTION CUES: Include bracketed vocal cues in narrationScript:
+   - [PAUSE 1s] after key ideas
+   - [SLOW DOWN] for critical architectural points
+   - [SPEED UP / ENERGETIC] when building momentum
+   - [LOWER VOICE] for serious personal reflections
+   - [RAISE VOICE] for breakthrough excitement
+3. ALWAYS USE CONTRACTIONS: Use "you'll", "it's", "here's", "that's", "we've", "don't", "can't". Never sound stiff or robotic.
+4. SOUND AUTHENTIC & ENERGETIC: Warm, conversational tone with genuine enthusiasm.
 
 DESIGN FOR EACH SECTION:
 - Text appears when narration mentions it

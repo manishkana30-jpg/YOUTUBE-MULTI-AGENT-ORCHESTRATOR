@@ -12,6 +12,7 @@ import { getTopicData } from './services/topic-content.js';
 import { getDynamicVideoPlayerHtml } from './services/video-player-html.js';
 import { contentMap, getSmartVideoSystemHtml } from './services/smart-video-system.js';
 import { getObsHybridStudioHtml, generateObsSceneCollectionJson } from './services/obs-hybrid-video.js';
+import { getVoiceoverStudioHtml } from './services/voiceover-studio.js';
 
 dotenv.config();
 
@@ -1356,6 +1357,11 @@ app.get('/hybrid-studio/overlays/kinetic', (req: Request, res: Response) => {
   <div class="arrow">➔ KEY CONCEPT</div>
 </body>
 </html>`);
+});
+
+// 16. Natural Voiceover Studio & Teleprompter
+app.get(['/voiceover-studio', '/api/voiceover-studio'], (req: Request, res: Response) => {
+  res.send(getVoiceoverStudioHtml());
 });
 
 // Fallback route: Redirect any unhandled paths to dashboard

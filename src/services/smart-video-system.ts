@@ -692,6 +692,9 @@ export function getSmartVideoSystemHtml(): string {
       <a href="/hybrid-studio" class="nav-link" style="border-color: #3B82F6; background: rgba(59, 130, 246, 0.15); color: #93C5FD;">
         🎙️ OBS Hybrid Studio
       </a>
+      <a href="/voiceover-studio" class="nav-link" style="border-color: #10B981; background: rgba(16, 185, 129, 0.15); color: #6EE7B7;">
+        🗣️ Voiceover Studio
+      </a>
     </nav>
   </div>
 
