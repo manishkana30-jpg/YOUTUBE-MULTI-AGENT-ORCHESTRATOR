@@ -170,7 +170,7 @@ app.get(['/api/calendar', '/calendar'], async (req: Request, res: Response) => {
   res.json({ briefs });
 });
 
-// 4b. Video Quality Audit API (Audits generated video against strict 70/100 publication gate)
+// 4b. Video Quality Audit API (Audits generated video against strict 90/100 publication gate)
 app.get(['/api/quality/audit', '/quality/audit'], async (req: Request, res: Response) => {
   const fallbackPath = path.resolve(process.cwd(), 'assets', 'fallback.mp4');
   const audit = qualityAuditor.auditVideo({
@@ -186,7 +186,8 @@ app.get(['/api/quality/audit', '/quality/audit'], async (req: Request, res: Resp
     channelTitle: 'NEXO KIDS'
   });
   res.json({
-    rule: 'BEFORE PUBLISHING ANY VIDEO: If score < 70, DO NOT PUBLISH. Revise first.',
+    rule: 'BEFORE PUBLISHING ANY VIDEO: If score < 90, DO NOT PUBLISH. Revise first.',
+    strictThreshold: 90,
     ...audit
   });
 });
@@ -967,7 +968,7 @@ app.get(['/', '/api', '/dashboard', '/api/dashboard'], async (req: Request, res:
       <div class="agent-card" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.05);">
         <div class="tag" style="color: #34D399;">GATE (QUALITY CONTROL)</div>
         <div class="name">Quality Gate Auditor</div>
-        <div class="desc">Strict 70/100 threshold: Visual (60), Audio (20), Educational (20)</div>
+        <div class="desc">Strict 90/100 threshold: Visual (60), Audio (20), Educational (20)</div>
       </div>
     </div>
 

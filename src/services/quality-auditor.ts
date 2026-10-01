@@ -41,7 +41,7 @@ export interface QualityAuditReport {
     maxScore: 20;
   };
   totalScore: number;                 // out of 100
-  passed: boolean;                    // totalScore >= 70
+  passed: boolean;                    // totalScore >= 90 (Strict 90/100 threshold)
   timestamp: string;
   feedback: string[];
   markdownReport: string;
@@ -51,7 +51,7 @@ export class QualityAuditorService {
   /**
    * Performs an exhaustive pre-publication quality check against the 3 pillars:
    * VISUAL QUALITY (60), AUDIO QUALITY (20), EDUCATIONAL VALUE (20).
-   * RULE: If total score < 70, DO NOT PUBLISH.
+   * STRICT RULE: If total score < 90, DO NOT PUBLISH.
    */
   public auditVideo(params: QualityAuditParams): QualityAuditReport {
     const feedback: string[] = [];
@@ -180,13 +180,13 @@ export class QualityAuditorService {
     // TOTAL SCORE & VERDICT
     // ==========================================
     const totalScore = visualScore + audioScore + educationalScore;
-    const passed = totalScore >= 70 && videoExists;
+    const passed = totalScore >= 90 && videoExists;
 
     // Generate formatted Markdown scorecard
     const mark = (v: boolean) => v ? '☑' : '□';
     const markdownReport = [
       `========================================================================`,
-      `  🔍 VIDEO CONTENT QUALITY AUDIT SCORECARD`,
+      `  🔍 VIDEO CONTENT QUALITY AUDIT SCORECARD (STRICT 90/100 GATE)`,
       `========================================================================`,
       `Video: "${title}"`,
       `File: ${params.videoPath} (${(videoSize / 1024).toFixed(1)} KB)`,
@@ -215,8 +215,8 @@ export class QualityAuditorService {
       `${mark(summaryKeyTakeaways)} Summary/key takeaways at end [3 pts]`,
       ``,
       `------------------------------------------------------------------------`,
-      `TOTAL SCORE: ${totalScore}/100 (Threshold: 70/100)`,
-      `VERDICT: ${passed ? '✅ PASSED — APPROVED FOR PUBLICATION' : '🛑 REJECTED — SCORE < 70 (DO NOT PUBLISH)'}`,
+      `TOTAL SCORE: ${totalScore}/100 (Strict Threshold: 90/100)`,
+      `VERDICT: ${passed ? '✅ PASSED — APPROVED FOR PUBLICATION (SCORE >= 90)' : '🛑 REJECTED — SCORE < 90 (STRICT GATE: DO NOT PUBLISH)'}`,
       `========================================================================`
     ].join('\n');
 
