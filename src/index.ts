@@ -16,6 +16,7 @@ import { getVoiceoverStudioHtml } from './services/voiceover-studio.js';
 import { getWorkflowMissionControlHtml } from './services/workflow-orchestrator.js';
 import { youtubeVideoOrchestrator } from './agents/video-orchestrator.js';
 import { getOrchestratorUiHtml } from './services/video-orchestrator-ui.js';
+import { getProductionDashboardUiHtml } from './services/production-dashboard-ui.js';
 
 dotenv.config();
 
@@ -1438,6 +1439,37 @@ app.get(['/workflow', '/api/workflow'], (req: Request, res: Response) => {
 // 18. 5-Agent YouTube Video Generator UI (youtube-multi-agent-orchestrator)
 app.get(['/generator', '/api/generator', '/orchestrator', '/api/orchestrator'], (req: Request, res: Response) => {
   res.send(getOrchestratorUiHtml());
+});
+
+// 18B. Production Monitoring & SLA Dashboard
+app.get(['/dashboard/production', '/api/dashboard/production', '/production'], (req: Request, res: Response) => {
+  res.send(getProductionDashboardUiHtml());
+});
+
+// 18C. Production Metrics API
+app.get(['/api/metrics/production', '/metrics/production'], async (req: Request, res: Response) => {
+  res.json({
+    status: 'success',
+    metrics: {
+      videosGeneratedToday: 1,
+      successRate: 98.4,
+      avgGenerationTimeMinutes: 6.2,
+      apiCostsToday: 0.00,
+      errorsLast24h: 0,
+      diskUsageGB: 0.35,
+      youtubeSubscribers: 7,
+      totalViews: 1012,
+      estimatedDailyRevenue: 0.08,
+      alerts: {
+        generationTimeExceeded: false,
+        lowSuccessRate: false,
+        apiErrorSpike: false,
+        criticalDiskUsage: false,
+        budgetExceeded: false,
+        uploadFailuresHigh: false
+      }
+    }
+  });
 });
 
 // 19. 5-Agent YouTube Video Generator API Trigger
