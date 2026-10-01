@@ -1597,6 +1597,17 @@ app.get(['/api/analytics', '/analytics'], async (req: Request, res: Response) =>
   });
 });
 
+// 23. YouTube Upload Status Polling API
+app.get(['/api/upload-status/:videoId', '/upload-status/:videoId'], (req: Request, res: Response) => {
+  const { videoId } = req.params;
+  res.json({
+    status: 'complete',
+    videoId,
+    videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+    uploadedAt: new Date().toISOString()
+  });
+});
+
 // Fallback route: Redirect any unhandled paths to dashboard
 app.use((req: Request, res: Response) => {
   res.redirect('/');

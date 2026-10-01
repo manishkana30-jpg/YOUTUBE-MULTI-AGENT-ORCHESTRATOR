@@ -41,7 +41,7 @@ export async function validateOutputVideo(videoPath) {
   return { size: stats.size, duration };
 }
 
-export async function editVideo(voiceoverPath, footagePaths, outputPath) {
+export async function editVideo(voiceoverPath, footagePaths, outputPath, customMusicPath) {
   if (!fs.existsSync(voiceoverPath)) {
     throw new Error(`Cannot edit video: Voiceover audio not found at ${voiceoverPath}`);
   }
@@ -69,7 +69,7 @@ export async function editVideo(voiceoverPath, footagePaths, outputPath) {
     console.log(`[Video Editor] Compositing ${validFootage.length} footage clips with voiceover...`);
 
     // 2 & 5. EXECUTE FFMPEG WITH H.264 + AAC UNIVERSAL CODEC
-    const result = await ffmpegHandler.compositeVideo(voiceoverPath, validFootage, targetOutput);
+    const result = await ffmpegHandler.compositeVideo(voiceoverPath, validFootage, targetOutput, customMusicPath);
 
     // 3. VALIDATE OUTPUT
     await validateOutputVideo(result.path);
