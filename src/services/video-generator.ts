@@ -186,6 +186,8 @@ export class VideoGeneratorService {
         }
 
         const filters = [
+          // Cybernetic Background Engineering Grid
+          `drawgrid=w=80:h=80:t=1:c=0x1E293B@0.4`,
           // Main Glowing Card
           `drawbox=x=60:y=60:w=1160:h=600:color=${theme.bgCard}@0.95:t=fill`,
           `drawbox=x=60:y=60:w=1160:h=600:color=${theme.color}@0.8:t=3`,
@@ -209,11 +211,11 @@ export class VideoGeneratorService {
 
         let ffmpegCmd: string;
         if (ttsSuccess && fs.existsSync(audioPath)) {
-          // Voiceover + ambient background soundbed
-          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -i "${audioPath}" -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350,volume=0.15" -filter_complex "[1:a]volume=1.0[vocal];[2:a]volume=0.12[bed];[vocal][bed]amix=inputs=2:duration=first[aout]" -vf "${filterString}" -map 0:v -map "[aout]" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
+          // Voiceover + ambient background soundbed with True-Peak Audio Normalization (-3dB)
+          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -i "${audioPath}" -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350,volume=0.15" -filter_complex "[1:a]volume=1.0[vocal];[2:a]volume=0.12[bed];[vocal][bed]amix=inputs=2:duration=first,loudnorm=I=-16:TP=-3:LRA=11[aout]" -vf "${filterString}" -map 0:v -map "[aout]" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
         } else {
-          // Silent/ambient audio fallback
-          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350,volume=0.2" -vf "${filterString}" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
+          // Silent/ambient audio fallback with normalization
+          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350,volume=0.2,loudnorm=I=-16:TP=-3:LRA=11" -vf "${filterString}" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
         }
 
         await execAsync(ffmpegCmd);

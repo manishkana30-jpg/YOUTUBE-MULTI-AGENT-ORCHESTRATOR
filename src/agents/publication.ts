@@ -8,6 +8,7 @@ import { captureAgentError } from '../services/sentry.js';
 import { VideoMetadata } from '../db/types.js';
 import fs from 'fs';
 import { videoGeneratorService } from '../services/video-generator.js';
+import { qualityAuditor } from '../services/quality-auditor.js';
 
 dotenv.config();
 
@@ -90,6 +91,26 @@ export class PublicationAgent {
 
         if (fs.existsSync(videoPath)) {
           const fileSizeBytes = fs.statSync(videoPath).size;
+
+          // ⚠️ RULE: Evaluate Quality Audit. If score < 70, DO NOT PUBLISH. Revise first.
+          console.log(`[${this.name}] 🔍 Running Pre-Publication Quality Gate Audit...`);
+          const audit = qualityAuditor.auditVideo({
+            videoPath,
+            title: payload.content.videoTitle,
+            description: payload.content.description,
+            scenes: (payload.content as any).scenes || [],
+            channelTitle: 'NEXO KIDS'
+          });
+
+          console.log(`\n${audit.markdownReport}\n`);
+
+          if (!audit.passed) {
+            const rejectMsg = `Quality Gate REJECTED: Total Score ${audit.totalScore}/100 (< 70 required threshold). Video revision required before publication. Feedback: ${audit.feedback.join('; ')}`;
+            console.error(`[${this.name}] 🛑 ${rejectMsg}`);
+            throw new Error(rejectMsg);
+          }
+
+          console.log(`[${this.name}] ✅ Quality Gate PASSED (Score: ${audit.totalScore}/100 >= 70). Authorizing live YouTube publication.`);
           console.log(`[${this.name}] 🎬 Preparing YouTube Data API v3 upload stream...`);
           console.log(`[${this.name}] Target File: ${videoPath} (${(fileSizeBytes / 1024).toFixed(1)} KB)`);
           console.log(`[${this.name}] Request Snippet:`, JSON.stringify(videoResource.snippet, null, 2));
