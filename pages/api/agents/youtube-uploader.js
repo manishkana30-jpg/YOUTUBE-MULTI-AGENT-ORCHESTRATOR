@@ -1,8 +1,13 @@
 import fs from 'fs';
 import { google } from 'googleapis';
-import { youtubeClient } from '../../../lib/youtube-client.js';
+import {
+  youtubeClient,
+  youtubeAuthRefresh,
+  uploadWithResume,
+  checkYoutubeQuota
+} from '../../../lib/youtube-client.js';
 
-// 5. METADATA VALIDATION
+// Metadata validation
 export function validateMetadata(rawMetadata = {}) {
   let title = rawMetadata.title ? String(rawMetadata.title).trim() : 'Automated Tutorial';
   if (!title || title.length === 0) {
@@ -31,23 +36,7 @@ export function validateMetadata(rawMetadata = {}) {
   };
 }
 
-// 1. TOKEN REFRESH IF NEEDED
-async function refreshTokenIfNeeded(oauth2Client) {
-  if (!oauth2Client) return null;
-  try {
-    const tokens = oauth2Client.credentials;
-    if (tokens && tokens.expiry_date && tokens.expiry_date < Date.now() + 60000) {
-      console.log('[YouTube Uploader] Access token expiring soon, refreshing...');
-      const refreshed = await oauth2Client.refreshAccessToken();
-      oauth2Client.setCredentials(refreshed.credentials);
-    }
-  } catch (err) {
-    console.warn('[YouTube Uploader] Notice checking access token expiry:', err.message);
-  }
-  return oauth2Client;
-}
-
-// 6. DUPLICATE CHECK: Prevent re-uploading duplicate title
+// Duplicate check
 async function isDuplicateUpload(youtube, title) {
   try {
     const searchRes = await youtube.search.list({
@@ -65,7 +54,7 @@ async function isDuplicateUpload(youtube, title) {
 }
 
 export async function uploadToYouTube(videoPath, metadata = {}) {
-  // 2. FILE VALIDATION: Ensure video exists and is not empty
+  // 1. File validation
   if (!videoPath || !fs.existsSync(videoPath)) {
     throw new Error(`Video file not found for upload: ${videoPath}`);
   }
@@ -75,17 +64,18 @@ export async function uploadToYouTube(videoPath, metadata = {}) {
     throw new Error(`Video file is empty: ${videoPath}`);
   }
 
-  // 5. VALIDATE METADATA
+  // 2. Validate metadata
   const validMeta = validateMetadata(metadata);
   const auth = youtubeClient.getAuth();
 
   if (auth) {
     try {
-      // 1. Refresh OAuth token if expired
-      await refreshTokenIfNeeded(auth);
+      // 3. Ensure valid OAuth2 token (refreshes if expiring within 5 minutes)
+      await youtubeAuthRefresh.ensureValidToken(auth);
       const youtube = google.youtube({ version: 'v3', auth });
+      await checkYoutubeQuota(youtube);
 
-      // 6. DUPLICATE CHECK
+      // 4. Duplicate check
       const isDup = await isDuplicateUpload(youtube, validMeta.title);
       if (isDup) {
         console.warn(`[YouTube Uploader] Duplicate video detected with title "${validMeta.title}". Appending timestamp.`);
@@ -94,37 +84,14 @@ export async function uploadToYouTube(videoPath, metadata = {}) {
 
       console.log(`[YouTube Uploader] Uploading "${validMeta.title}" (${(stats.size / 1024 / 1024).toFixed(2)} MB)...`);
 
-      // 4. STREAM-BASED RESILIENT UPLOAD
-      const mediaStream = fs.createReadStream(videoPath);
-
-      const response = await youtube.videos.insert({
-        part: ['snippet', 'status'],
-        requestBody: {
-          snippet: {
-            title: validMeta.title,
-            description: validMeta.description,
-            tags: validMeta.tags,
-            categoryId: validMeta.categoryId,
-            defaultLanguage: 'en',
-            defaultAudioLanguage: 'en'
-          },
-          status: {
-            privacyStatus: validMeta.privacyStatus,
-            selfDeclaredMadeForKids: false
-          }
-        },
-        media: {
-          body: mediaStream
-        }
-      });
-
-      if (response.data?.id) {
-        const videoUrl = `https://www.youtube.com/watch?v=${response.data.id}`;
+      // 5. Resumable upload with progress reporting
+      const videoId = await uploadWithResume(youtube, videoPath, validMeta);
+      if (videoId) {
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
         console.log(`[YouTube Uploader] ✅ Upload successful! Video URL: ${videoUrl}`);
         return videoUrl;
       }
     } catch (err) {
-      // 3. UPLOAD QUOTA ERROR HANDLING
       if (err.message && err.message.includes('quotaExceeded')) {
         console.error('[YouTube Uploader] ❌ YouTube API quota exceeded for today.');
       } else {
@@ -133,6 +100,6 @@ export async function uploadToYouTube(videoPath, metadata = {}) {
     }
   }
 
-  // Graceful fallback to client upload method or verified preview ID
+  // Graceful fallback to client upload method
   return await youtubeClient.uploadVideo(videoPath, validMeta);
 }
