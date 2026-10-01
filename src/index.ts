@@ -720,8 +720,8 @@ app.get(['/auth/youtube/callback', '/api/auth/youtube/callback'], async (req: Re
   }
 });
 
-// 7. Visual Dashboard UI (Served at `/` and `/api`)
-app.get(['/', '/api'], async (req: Request, res: Response) => {
+// 7. Visual Dashboard UI (Served at `/`, `/dashboard`, and `/api`)
+app.get(['/', '/api', '/dashboard', '/api/dashboard'], async (req: Request, res: Response) => {
   const stats = await db.getSystemStats();
   const logs = await db.getRecentLogs(15);
   const channels = await db.fetchActiveChannels();
