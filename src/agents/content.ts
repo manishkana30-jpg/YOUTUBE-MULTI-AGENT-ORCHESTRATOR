@@ -135,6 +135,67 @@ Generate a viral, high-value, highly readable content plan now.`;
   }
 
   private generateFallbackContent(topicBrief: string, trends: TrendingTopicResult[]): ContentAgentOutput {
+    const isContentGuide = /content|breakdown|guide/i.test(topicBrief);
+
+    if (isContentGuide) {
+      return {
+        videoTitle: 'What is CONTENT? Complete Breakdown - Beginners Guide',
+        alternativeTitles: [
+          'The Secret Formula for Great Content (Info + Entertainment + Value)',
+          'How to Create Content That Gets Views - Complete Step-by-Step Guide',
+          'Why 90% of Content Creators Fail (And How to Fix It)'
+        ],
+        description: `What is CONTENT? In this complete beginner's breakdown, we demystify content creation, the 3 pillars of great content, and step-by-step production strategies.\n\n` +
+          `⏱️ CHAPTERS:\n` +
+          `00:00 - The Hook: Why 90% of Creators Fail\n` +
+          `00:30 - What is Content? (Information + Entertainment + Value)\n` +
+          `01:30 - Why Content Matters Online\n` +
+          `03:00 - The 3 Pillars of Great Content\n` +
+          `05:00 - The 5 Major Content Types\n` +
+          `07:00 - Step-by-Step Content Creation Blueprint\n` +
+          `09:00 - Pre-Publication Quality Checklist\n` +
+          `11:00 - Common Content Mistakes to Avoid\n` +
+          `13:00 - Real Case Studies & Action Steps\n\n` +
+          `🎯 THE 3 PILLARS:\n` +
+          `1. Educational Value (Teaches a clear lesson)\n` +
+          `2. Emotional Engagement (Makes viewers feel something)\n` +
+          `3. Call-to-Action (Gives viewers a next step)\n\n` +
+          `💡 Subscribe to NEXO KIDS for daily automated creation blueprints!`,
+        cta: 'Subscribe for more content creation masterclasses and drop a comment with your channel niche!',
+        trendingContextUsed: 'Content creation frameworks, digital media distribution, and audience retention metrics',
+        scenes: [
+          {
+            sceneNumber: 1,
+            type: 'HOOK',
+            headline: '90% of Content Creators Fail',
+            subtitle: 'Formula: Content = Information + Entertainment + Value',
+            narrationScript: 'Ninety percent of people who create content fail because they do not understand this one secret formula.'
+          },
+          {
+            sceneNumber: 2,
+            type: 'PROBLEM',
+            headline: 'Why Boring Content Crashes',
+            subtitle: 'Static Slides & Zero Engagement Kill Viewer Retention',
+            narrationScript: 'Without the three pillars, you are just creating noise. Static slides and boring delivery cause viewers to leave instantly.'
+          },
+          {
+            sceneNumber: 3,
+            type: 'SOLUTION',
+            headline: 'The 3 Pillars of Great Content',
+            subtitle: '1. Educational Value  2. Emotional Hook  3. Clear CTA',
+            narrationScript: 'Great content combines three elements: educational value that teaches, emotional engagement that connects, and a clear call to action.'
+          },
+          {
+            sceneNumber: 4,
+            type: 'TAKEAWAY',
+            headline: 'Start Creating Content Today',
+            subtitle: 'Subscribe to NEXO KIDS for Daily Creator Blueprints',
+            narrationScript: 'Start creating today. Your first video will not be perfect, but it will be yours. Subscribe for daily creation blueprints.'
+          }
+        ]
+      };
+    }
+
     return {
       videoTitle: `How We Built a 24/7 Autonomous YouTube Multi-Agent with Gemini & MCP`,
       alternativeTitles: [
