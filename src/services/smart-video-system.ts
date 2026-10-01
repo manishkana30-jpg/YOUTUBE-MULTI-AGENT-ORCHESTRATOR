@@ -6,6 +6,7 @@ export interface VisualItem {
   animation: string;
   color: string;
   actor: string;
+  framing?: 'FULLSCREEN_PRESENTER' | 'SPLIT_SCREEN' | 'PICTURE_IN_PICTURE' | 'CLOSE_UP';
 }
 
 export interface ContentItem {
@@ -37,11 +38,12 @@ export const contentMap: Record<string, ContentItem> = {
     bgColor: '#080E1C',
     font: "'Fira Code', 'JetBrains Mono', monospace",
     visuals: [
-      { timestamp: 0.5, type: 'headline', text: '🐍 Complete Python Tutorial for Beginners', subtitle: 'From Zero to Production Architecture', animation: 'fade-down', color: '#3B82F6', actor: 'professional_male_voice' },
-      { timestamp: 3.0, type: 'code-callout', text: 'async def worker(): await asyncio.gather(*tasks)', subtitle: 'Asyncio Event Loops & Non-Blocking Coroutines', animation: 'slide-left', color: '#60A5FA', actor: 'professional_male_voice' },
-      { timestamp: 6.5, type: 'diagram', text: 'Task Queue ➔ Event Loop ➔ Zero-Copy Buffer', subtitle: '10x Latency Drop with TaskGroup Execution', animation: 'zoom-pulse', color: '#F59E0B', actor: 'professional_male_voice' },
-      { timestamp: 9.5, type: 'metrics', text: 'Production Benchmark: 140ms Latency', subtitle: 'Scales to 100k Concurrent WebSockets with Zero Thread Starvation', animation: 'glow-rise', color: '#10B981', actor: 'professional_male_voice' },
-      { timestamp: 12.5, type: 'cta', text: '👉 Subscribe to NEXO KIDS for Daily Python Code', subtitle: 'Get the Free Open-Source Repository & Project Files', animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_male_voice' }
+      { timestamp: 0.5, type: 'headline', text: '🐍 Complete Python Tutorial for Beginners', subtitle: 'Hey everyone, welcome back! Today we master Python from zero to hero.', animation: 'fade-down', color: '#3B82F6', actor: 'professional_male_voice', framing: 'FULLSCREEN_PRESENTER' },
+      { timestamp: 3.0, type: 'code-callout', text: 'Most developers struggle with blocking synchronous scripts.', subtitle: 'Watch the split screen: standard threads stall under heavy I/O workloads.', animation: 'slide-left', color: '#60A5FA', actor: 'professional_male_voice', framing: 'SPLIT_SCREEN' },
+      { timestamp: 6.5, type: 'diagram', text: 'Step 1: Asyncio Event Loops & TaskGroups', subtitle: 'Watch how I do it on screen: concurrent task gathering yields 8x throughput.', animation: 'zoom-pulse', color: '#F59E0B', actor: 'professional_male_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 9.5, type: 'metrics', text: 'Real Case Study: Production Benchmark 140ms', subtitle: 'My student followed these steps and reduced WebSocket latency from 1.2s to 140ms.', animation: 'glow-rise', color: '#10B981', actor: 'professional_male_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 12.0, type: 'story', text: 'Three years ago, I didn\'t know asyncio either.', subtitle: 'Learning this architectural method transformed my backend engineering career.', animation: 'fade-down', color: '#8B5CF6', actor: 'professional_male_voice', framing: 'CLOSE_UP' },
+      { timestamp: 14.5, type: 'cta', text: '👉 Subscribe to NEXO KIDS for Daily Python Blueprints', subtitle: 'Try this yourself today, comment what you discover, and ring the bell!', animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_male_voice', framing: 'FULLSCREEN_PRESENTER' }
     ]
   },
 
@@ -58,11 +60,12 @@ export const contentMap: Record<string, ContentItem> = {
     bgColor: '#12120A',
     font: "'Plus Jakarta Sans', sans-serif",
     visuals: [
-      { timestamp: 0.5, type: 'headline', text: '⚡ JavaScript Complete Guide', subtitle: 'Master the V8 Engine, Event Loop & Asynchronous Architecture', animation: 'fade-down', color: '#F7DF1E', actor: 'professional_female_voice' },
-      { timestamp: 3.0, type: 'code-callout', text: 'queueMicrotask(() => processJob())', subtitle: 'Microtask Queue Execution Priority Before Render', animation: 'slide-left', color: '#FBBF24', actor: 'professional_female_voice' },
-      { timestamp: 6.5, type: 'diagram', text: 'Call Stack ➔ Microtask Queue ➔ Render Pipeline', subtitle: 'Lock-Free 60 FPS Smooth User Interactions', animation: 'zoom-pulse', color: '#10B981', actor: 'professional_female_voice' },
-      { timestamp: 10.0, type: 'metrics', text: 'INP Reduced to < 45ms Across All Devices', subtitle: 'Eliminating Main-Thread Long Tasks and Layout Thrashing', animation: 'glow-rise', color: '#06B6D4', actor: 'professional_female_voice' },
-      { timestamp: 13.0, type: 'cta', text: '👉 Subscribe for Weekly Full-Stack JavaScript Deep Dives', subtitle: 'Drop Your Favorite Framework in the Comments Below!', animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_female_voice' }
+      { timestamp: 0.5, type: 'headline', text: '⚡ JavaScript Complete Guide', subtitle: 'Welcome back! Today we master modern JavaScript and V8 engine internals.', animation: 'fade-down', color: '#F7DF1E', actor: 'professional_female_voice', framing: 'FULLSCREEN_PRESENTER' },
+      { timestamp: 3.0, type: 'code-callout', text: 'Long synchronous tasks lock the main browser thread.', subtitle: 'See the UI freeze on screen: frame rates collapse down to zero.', animation: 'slide-left', color: '#FBBF24', actor: 'professional_female_voice', framing: 'SPLIT_SCREEN' },
+      { timestamp: 6.5, type: 'diagram', text: 'Step 1: Microtask Queue & queueMicrotask()', subtitle: 'Watch the execution order: promises run before the next paint tick.', animation: 'zoom-pulse', color: '#10B981', actor: 'professional_female_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 10.0, type: 'metrics', text: 'Real Case Study: INP Reduced to < 45ms', subtitle: 'In production, eliminating main-thread long tasks preserved fluid 60fps.', animation: 'glow-rise', color: '#06B6D4', actor: 'professional_female_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 12.0, type: 'story', text: 'Early in my career, UI lag cost us major conversions.', subtitle: 'Understanding V8 microtask scheduling completely revolutionized our apps.', animation: 'fade-down', color: '#8B5CF6', actor: 'professional_female_voice', framing: 'CLOSE_UP' },
+      { timestamp: 14.5, type: 'cta', text: '👉 Subscribe for Weekly Full-Stack JavaScript Deep Dives', subtitle: 'Try this in your browser devtools, comment below, and subscribe!', animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_female_voice', framing: 'FULLSCREEN_PRESENTER' }
     ]
   },
 
@@ -79,11 +82,12 @@ export const contentMap: Record<string, ContentItem> = {
     bgColor: '#071510',
     font: "'Outfit', sans-serif",
     visuals: [
-      { timestamp: 0.5, type: 'headline', text: '🤖 AI & Machine Learning Basics', subtitle: 'Hierarchical Supervisor Swarms & Model Context Protocol', animation: 'fade-down', color: '#10B981', actor: 'professional_deep_voice' },
-      { timestamp: 3.0, type: 'code-callout', text: 'const swarm = new AgentSupervisor({ mcp: true })', subtitle: 'Orchestrating Specialized Subagents Concurrently', animation: 'slide-left', color: '#00F0FF', actor: 'professional_deep_voice' },
-      { timestamp: 6.5, type: 'diagram', text: 'Supervisor Controller ➔ Content, SEO & Media Workers', subtitle: 'Dynamic Tool Discovery via MCP Protocol', animation: 'zoom-pulse', color: '#A855F7', actor: 'professional_deep_voice' },
-      { timestamp: 10.0, type: 'metrics', text: '10x Autonomous Speed & 100% Deterministic Retries', subtitle: 'Zero Context Window Hallucination or Thread Hangs', animation: 'glow-rise', color: '#F59E0B', actor: 'professional_deep_voice' },
-      { timestamp: 13.0, type: 'cta', text: '👉 Subscribe to NEXO KIDS for Production AI Agent Templates', subtitle: 'Star the GitHub Repo & Build Your First Autonomous Swarm!', animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_deep_voice' }
+      { timestamp: 0.5, type: 'headline', text: '🤖 AI & Machine Learning Basics', subtitle: 'Welcome! Today I\'m going to show you how to master autonomous AI agent swarms.', animation: 'fade-down', color: '#10B981', actor: 'professional_deep_voice', framing: 'FULLSCREEN_PRESENTER' },
+      { timestamp: 3.0, type: 'code-callout', text: 'Single-prompt AI chains get stuck in infinite retries.', subtitle: 'Look at the screen: context drift burns tokens and causes silent crashes.', animation: 'slide-left', color: '#00F0FF', actor: 'professional_deep_voice', framing: 'SPLIT_SCREEN' },
+      { timestamp: 6.5, type: 'diagram', text: 'Step 1: Supervisor-Worker Multi-Agent Swarms', subtitle: 'Watch the controller delegate tasks to specialized workers via MCP.', animation: 'zoom-pulse', color: '#A855F7', actor: 'professional_deep_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 10.0, type: 'metrics', text: 'Real Case Study: 10x Speed with Zero Crashes', subtitle: 'Autonomous execution completed in 12 seconds with 100% verified test passes.', animation: 'glow-rise', color: '#F59E0B', actor: 'professional_deep_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 12.0, type: 'story', text: 'I spent months battling fragile prompt chains.', subtitle: 'Switching to hierarchical supervisor swarms changed everything.', animation: 'fade-down', color: '#8B5CF6', actor: 'professional_deep_voice', framing: 'CLOSE_UP' },
+      { timestamp: 14.5, type: 'cta', text: '👉 Subscribe to NEXO KIDS for Production AI Blueprints', subtitle: 'Star the GitHub repo, build your swarm, and I\'ll see you in the next video!', animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_deep_voice', framing: 'FULLSCREEN_PRESENTER' }
     ]
   }
 };
@@ -96,7 +100,7 @@ export function getSmartVideoSystemHtml(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Video Content System — Dynamic DOM Architecture</title>
+  <title>Smart Video Content System — Engaging Human Presence Architecture</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -133,7 +137,7 @@ export function getSmartVideoSystemHtml(): string {
     /* Top Global Header */
     .top-bar {
       width: 100%;
-      max-width: 1080px;
+      max-width: 1120px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -209,7 +213,7 @@ export function getSmartVideoSystemHtml(): string {
     #video-container {
       position: relative;
       width: 100%;
-      max-width: 1080px;
+      max-width: 1120px;
       background: var(--card-bg);
       border: 2px solid var(--theme-color);
       border-radius: 20px;
@@ -278,6 +282,111 @@ export function getSmartVideoSystemHtml(): string {
       50% { transform: scale(0.7); opacity: 0.4; }
     }
 
+    /* HUMAN PRESENCE INSET CAMERA (Picture-in-Picture / Split-Screen / Fullscreen) */
+    .creator-pip-box {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      width: 240px;
+      height: 155px;
+      background: #0A0D18;
+      border: 2px solid var(--theme-color);
+      border-radius: 14px;
+      overflow: hidden;
+      z-index: 25;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 25px var(--theme-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .creator-pip-box.fullscreen-mode {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      border: none;
+      z-index: 10;
+    }
+
+    .creator-pip-box.split-mode {
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: auto;
+      width: 44%;
+      height: 100%;
+      border-radius: 0;
+      border: none;
+      border-right: 3px solid var(--theme-color);
+      z-index: 15;
+    }
+
+    #creator-webcam {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .creator-avatar-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.4) 100%);
+    }
+
+    .avatar-head {
+      font-size: 2.4rem;
+      filter: drop-shadow(0 0 12px var(--theme-color));
+    }
+
+    .voice-bars {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      height: 16px;
+    }
+
+    .voice-bars span {
+      width: 4px;
+      height: 6px;
+      background: var(--theme-color);
+      border-radius: 2px;
+      animation: wave 1s infinite alternate;
+    }
+    .voice-bars span:nth-child(2) { animation-delay: 0.2s; }
+    .voice-bars span:nth-child(3) { animation-delay: 0.4s; }
+    .voice-bars span:nth-child(4) { animation-delay: 0.6s; }
+
+    @keyframes wave {
+      from { height: 4px; }
+      to { height: 16px; }
+    }
+
+    .pip-tag {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid var(--theme-color);
+      color: var(--theme-color);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      pointer-events: none;
+    }
+
     /* #visual-overlay (Dynamic Visual Overlays & Kinetic Animations) */
     #visual-overlay {
       position: absolute;
@@ -297,7 +406,7 @@ export function getSmartVideoSystemHtml(): string {
       border-left: 5px solid var(--theme-color);
       border-radius: 12px;
       padding: 1.25rem 1.75rem;
-      max-width: 850px;
+      max-width: 820px;
       backdrop-filter: blur(14px);
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 20px var(--theme-glow);
       transform: translateY(20px);
@@ -341,7 +450,7 @@ export function getSmartVideoSystemHtml(): string {
     }
 
     #video-title {
-      font-size: 1.6rem;
+      font-size: 1.65rem;
       font-weight: 800;
       color: #FFF;
       margin-bottom: 0.5rem;
@@ -380,6 +489,7 @@ export function getSmartVideoSystemHtml(): string {
       display: flex;
       align-items: center;
       gap: 0.6rem;
+      flex-wrap: wrap;
     }
 
     .btn-action {
@@ -403,10 +513,132 @@ export function getSmartVideoSystemHtml(): string {
       border-color: var(--theme-color);
     }
 
+    .btn-highlight {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--theme-color);
+      color: #93C5FD;
+    }
+
     .time-indicator {
       font-family: var(--mono);
       font-size: 0.85rem;
       color: #94A3B8;
+    }
+
+    /* PRODUCTION SETUP & 12-MINUTE BLUEPRINT ACCORDION */
+    .production-card {
+      width: 100%;
+      max-width: 1120px;
+      background: rgba(16, 20, 32, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.75rem 2rem;
+      margin-top: 1.5rem;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .production-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .production-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .setup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .setup-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .setup-box-title {
+      font-size: 0.82rem;
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--theme-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .setup-list {
+      list-style: none;
+      font-size: 0.82rem;
+      color: #CBD5E1;
+    }
+
+    .setup-list li {
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* 12-Minute Storyboard Tabs */
+    .storyboard-nav {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .sb-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: #94A3B8;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .sb-btn:hover {
+      color: #FFF;
+      border-color: var(--theme-color);
+    }
+
+    .sb-btn.active {
+      background: var(--theme-color);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .script-teleprompter {
+      background: #090C16;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      font-size: 0.9rem;
+      color: #E2E8F0;
+      line-height: 1.6;
+    }
+
+    .notes-box {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: #94A3B8;
+      border-left: 3px solid var(--theme-color);
+      padding-left: 0.75rem;
     }
 
     /* Timed Visual Overlay Animation Variants */
@@ -444,7 +676,7 @@ export function getSmartVideoSystemHtml(): string {
   <div class="top-bar">
     <a href="/" class="brand-title">
       <span class="badge-pill">SMART VIDEO</span>
-      <span>Dynamic Content Engine</span>
+      <span>Engaging Human Presence Engine</span>
     </a>
 
     <nav class="topic-nav" aria-label="Topic Selection">
@@ -477,6 +709,21 @@ export function getSmartVideoSystemHtml(): string {
         </div>
         <audio id="voiceover-audio" autoplay></audio>
       </div>
+
+      <!-- HUMAN PRESENCE INSET CAMERA (Picture-in-Picture / Split-Screen / Fullscreen) -->
+      <div id="creator-pip" class="creator-pip-box" title="Human Presence PiP Mode">
+        <video id="creator-webcam" autoplay playsinline muted></video>
+        <div id="creator-avatar" class="creator-avatar-placeholder">
+          <div class="avatar-head">👨‍🏫</div>
+          <div class="voice-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="pip-tag">
+          <span class="actor-pulse"></span>
+          <span id="pip-tag-text">YOU ON CAMERA</span>
+        </div>
+      </div>
       
       <div id="visual-overlay">
         <!-- Text overlays, animations -->
@@ -496,6 +743,9 @@ export function getSmartVideoSystemHtml(): string {
         </button>
         <button class="btn-action" onclick="restart()">
           ↺ Restart
+        </button>
+        <button class="btn-action btn-highlight" id="webcamToggleBtn" onclick="toggleCreatorWebcam()">
+          📹 Toggle Creator Webcam (PiP)
         </button>
         <button class="btn-action" id="speechBtn" onclick="toggleSpeechFallback()">
           🔊 Neural Voice: ON
@@ -522,6 +772,65 @@ export function getSmartVideoSystemHtml(): string {
     </div>
   </div>
 
+  <!-- PRODUCTION SETUP & 12-MINUTE SCRIPT GUIDE -->
+  <div class="production-card">
+    <div class="production-header">
+      <div class="production-title">
+        <span>🎬 Human Presence Production Blueprint (12-Minute Standard)</span>
+      </div>
+      <span class="badge-pill">CREATOR SETUP</span>
+    </div>
+
+    <!-- Production Setup Checklist -->
+    <div class="setup-grid">
+      <div class="setup-box">
+        <div class="setup-box-title">📷 CAMERA SETUP</div>
+        <ul class="setup-list">
+          <li>✓ 1080p minimum webcam or phone</li>
+          <li>✓ Positioned at eye level (not looking down)</li>
+          <li>✓ Steady tripod with soft diffusion</li>
+        </ul>
+      </div>
+
+      <div class="setup-box">
+        <div class="setup-box-title">🛋️ LOCATION & LIGHTING</div>
+        <ul class="setup-list">
+          <li>✓ Clean background (office, bookshelf, plant)</li>
+          <li>✓ Natural key light + soft ring light</li>
+          <li>✓ Sound-dampened quiet recording room</li>
+        </ul>
+      </div>
+
+      <div class="setup-box">
+        <div class="setup-box-title">🎙️ AUDIO SETUP</div>
+        <ul class="setup-list">
+          <li>✓ Cardioid USB mic (AT2020, Blue Yeti)</li>
+          <li>✓ 6-8 inches from mouth with pop filter</li>
+          <li>✓ Over-ear headphones for zero feedback</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 12-Minute Scene Navigation Tabs -->
+    <div class="storyboard-nav" role="tablist">
+      <button class="sb-btn active" onclick="jumpToScene(0, 'FULLSCREEN_PRESENTER')">[00:00-00:30] INTRO (You on Camera)</button>
+      <button class="sb-btn" onclick="jumpToScene(3, 'SPLIT_SCREEN')">[00:30-02:00] PROBLEM (Split Screen)</button>
+      <button class="sb-btn" onclick="jumpToScene(6.5, 'PICTURE_IN_PICTURE')">[02:00-08:00] MAIN TEACHING (3 Layers)</button>
+      <button class="sb-btn" onclick="jumpToScene(9.5, 'PICTURE_IN_PICTURE')">[08:00-10:00] REAL EXAMPLES (Case Study)</button>
+      <button class="sb-btn" onclick="jumpToScene(12, 'CLOSE_UP')">[10:00-11:30] YOUR STORY (Close-Up)</button>
+      <button class="sb-btn" onclick="jumpToScene(14.5, 'FULLSCREEN_PRESENTER')">[11:30-12:00] CTA (You + Animated Text)</button>
+    </div>
+
+    <!-- Dynamic Teleprompter Box -->
+    <div class="script-teleprompter" id="teleprompterText">
+      <strong>[00:00-00:30] INTRO SCRIPT:</strong><br>
+      "Hey everyone, welcome back! I'm your host, and today I'm going to show you how to master this topic. By the end of this video, you'll understand exactly what you need to know to get started. So let's jump in!"
+      <div class="notes-box">
+        <strong>Production Notes:</strong> Direct eye contact with camera &bull; Warm natural smile &bull; Conversational tone &bull; Gentle hand gestures.
+      </div>
+    </div>
+  </div>
+
   <!-- =======================================================================
        JAVASCRIPT IMPLEMENTATION
        ======================================================================= -->
@@ -532,6 +841,8 @@ export function getSmartVideoSystemHtml(): string {
     let activeVisuals = [];
     let activeVisualTimestamp = null;
     let isSpeechEnabled = true;
+    let isWebcamActive = false;
+    let webcamStream = null;
 
     // 2. Load Content By URL (Exact Implementation from User Requirement)
     const loadContentByURL = () => {
@@ -600,13 +911,12 @@ export function getSmartVideoSystemHtml(): string {
       const audio = document.getElementById('voiceover-audio');
       activeVisualTimestamp = null;
       
-      // Remove any existing timeupdate listeners to prevent duplicate listener accumulation
+      // Single debounced timeupdate listener:
+      // Prevents listener leaks, avoids duplicate re-renders,
+      // and guarantees human-like precision even when seeking!
       audio.ontimeupdate = () => {
         const cur = audio.currentTime;
         
-        // Exact timestamp window matching as defined in user requirements
-        // Supports both: (Math.abs(audio.currentTime - visual.timestamp) < 0.2)
-        // AND time-bracket detection for seeking backwards and forwards:
         const currentVisual = visualsData
           .filter(v => cur >= v.timestamp)
           .sort((a, b) => b.timestamp - a.timestamp)[0];
@@ -618,7 +928,7 @@ export function getSmartVideoSystemHtml(): string {
       };
     };
 
-    // 4. Update Visual Overlay
+    // 4. Update Visual Overlay & Camera Framing
     function updateVisual(visual) {
       console.log('[Visual Engine] Displaying visual at timestamp:', visual.timestamp, visual);
       const card = document.getElementById('activeVisualCard');
@@ -637,12 +947,93 @@ export function getSmartVideoSystemHtml(): string {
       // Apply kinetic animation class
       card.className = 'overlay-card visible anim-' + (visual.animation || 'fade-down');
 
-      // Play neural Web Speech synthesis fallback when audio element is muted/autoplay blocked
+      // Adjust Camera Framing
+      if (visual.framing) {
+        setCameraFraming(visual.framing);
+      }
+
+      // Play neural Web Speech synthesis fallback
       if (isSpeechEnabled && window.speechSynthesis) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(visual.text);
         utterance.rate = 1.05;
         window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Camera Framing Controller
+    function setCameraFraming(framing) {
+      const pip = document.getElementById('creator-pip');
+      if (!pip) return;
+      pip.classList.remove('fullscreen-mode', 'split-mode');
+      if (framing === 'FULLSCREEN_PRESENTER' || framing === 'CLOSE_UP') {
+        pip.classList.add('fullscreen-mode');
+      } else if (framing === 'SPLIT_SCREEN') {
+        pip.classList.add('split-mode');
+      }
+    }
+
+    // Toggle Creator Webcam
+    async function toggleCreatorWebcam() {
+      const webcamEl = document.getElementById('creator-webcam');
+      const avatarEl = document.getElementById('creator-avatar');
+      const btn = document.getElementById('webcamToggleBtn');
+      const pipTagText = document.getElementById('pip-tag-text');
+
+      if (!isWebcamActive) {
+        try {
+          webcamStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720 },
+            audio: false
+          });
+          if (webcamEl) {
+            webcamEl.srcObject = webcamStream;
+            webcamEl.style.display = 'block';
+          }
+          if (avatarEl) avatarEl.style.display = 'none';
+          if (btn) btn.textContent = '📹 Stop Creator Webcam';
+          if (pipTagText) pipTagText.textContent = 'LIVE WEBCAM ON';
+          isWebcamActive = true;
+        } catch (err) {
+          alert('Camera notification: Webcam access was not granted (' + err.message + '). Displaying interactive Human Presence Avatar simulation.');
+          if (avatarEl) avatarEl.style.display = 'flex';
+          if (webcamEl) webcamEl.style.display = 'none';
+          if (pipTagText) pipTagText.textContent = 'AI AVATAR ACTIVE';
+        }
+      } else {
+        if (webcamStream) {
+          webcamStream.getTracks().forEach(t => t.stop());
+          webcamStream = null;
+        }
+        if (webcamEl) webcamEl.style.display = 'none';
+        if (avatarEl) avatarEl.style.display = 'flex';
+        if (btn) btn.textContent = '📹 Toggle Creator Webcam (PiP)';
+        if (pipTagText) pipTagText.textContent = 'YOU ON CAMERA';
+        isWebcamActive = false;
+      }
+    }
+
+    // 12-Minute Scene Scrubber
+    function jumpToScene(timestamp, framing) {
+      const video = document.getElementById('main-video');
+      const audio = document.getElementById('voiceover-audio');
+      if (video) video.currentTime = timestamp;
+      if (audio) audio.currentTime = timestamp;
+      activeVisualTimestamp = null;
+      setCameraFraming(framing);
+
+      document.querySelectorAll('.sb-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(timestamp.toString()));
+      });
+
+      const teleprompter = document.getElementById('teleprompterText');
+      if (teleprompter) {
+        const matchingVisual = activeVisuals.find(v => Math.abs(v.timestamp - timestamp) < 0.8) || activeVisuals[0];
+        if (matchingVisual) {
+          teleprompter.innerHTML = '<strong>' + (matchingVisual.type || 'SCENE').toUpperCase() + ' SCRIPT:</strong><br>'
+            + '"' + matchingVisual.subtitle + '"'
+            + '<div class="notes-box"><strong>Production Notes:</strong> ' + matchingVisual.text + ' &bull; Camera Framing: ' + framing + '</div>';
+        }
       }
     }
 
