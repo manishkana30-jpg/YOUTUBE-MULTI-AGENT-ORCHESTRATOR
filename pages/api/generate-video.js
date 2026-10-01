@@ -1,5 +1,6 @@
 import { OrchestrationEngine } from '../../lib/orchestration-engine.js';
 import rateLimit from 'express-rate-limit';
+import { sanitize, authenticateRequest } from '../../lib/sanitizer.js';
 
 const TRENDING_TOPICS = [
   'Learn Python in 10 Minutes (Complete Beginner Guide)',
@@ -14,10 +15,10 @@ export function getRandomTrendingTopic() {
   return TRENDING_TOPICS[Math.floor(Math.random() * TRENDING_TOPICS.length)];
 }
 
-// 3. RATE LIMITING: 1 request per minute per IP (protects AI quotas)
+// 3. RATE LIMITING: 5 requests per minute per IP
 const limiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5, // allows testing & cron while preventing spam
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -27,7 +28,6 @@ const limiter = rateLimit({
   }
 });
 
-// Helper to run express middleware in serverless/Next.js environment
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
     fn(req, res, (result) => {
@@ -38,7 +38,7 @@ function runMiddleware(req, res, fn) {
 }
 
 export default async function handler(req, res) {
-  // 6. RESPONSE HEADERS: Enforce security & caching headers
+  // 6. RESPONSE HEADERS: Security & caching protection
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -56,6 +56,15 @@ export default async function handler(req, res) {
       code: 'RATE_LIMIT_EXCEEDED',
       timestamp: new Date().toISOString()
     });
+  }
+
+  // 4. AUTHENTICATION: Check API_SECRET_KEY if configured
+  let isAuthorized = false;
+  await runMiddleware(req, res, (rq, rs, next) => {
+    isAuthorized = authenticateRequest(rq, rs, next);
+  });
+  if (!isAuthorized && process.env.API_SECRET_KEY) {
+    return; // Response already handled with 401
   }
 
   // Method check
@@ -76,7 +85,7 @@ export default async function handler(req, res) {
     topic = req.query.topic;
   }
 
-  // 2. REQUEST VALIDATION
+  // 2. INPUT VALIDATION & SANITIZATION
   if (!isCron) {
     if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
       return res.status(400).json({
@@ -86,10 +95,10 @@ export default async function handler(req, res) {
       });
     }
 
-    if (topic.trim().length > 200) {
+    if (topic.trim().length > 300) {
       return res.status(400).json({
         status: 'error',
-        error: 'Topic must be less than 200 characters',
+        error: 'Topic must be less than 300 characters',
         code: 'TOPIC_TOO_LONG'
       });
     }
@@ -103,18 +112,18 @@ export default async function handler(req, res) {
     }
   }
 
-  const targetTopic = (topic && topic.trim()) ? topic.trim() : getRandomTrendingTopic();
-  const targetNiche = niche || 'Technology';
+  const cleanTopic = sanitize((topic && topic.trim()) ? topic.trim() : getRandomTrendingTopic());
+  const cleanNiche = sanitize(niche || 'Technology');
 
-  // 5. DETAILED LOGGING
+  // 5. DETAILED SAFE LOGGING
   const requestStartTime = new Date().toISOString();
   console.log(`[${requestStartTime}] 🚀 Starting video generation`);
-  console.log(`Topic: "${targetTopic}"`);
-  console.log(`Niche: "${targetNiche}"`);
+  console.log(`Topic: "${cleanTopic}"`);
+  console.log(`Niche: "${cleanNiche}"`);
   console.log(`Trigger: ${isCron ? 'Vercel Cron (9 AM UTC)' : 'Manual API/Dashboard'}`);
   console.log(`UploadToYouTube: ${uploadToYouTube !== false}`);
 
-  // 1 & 4. ERROR HANDLING & TIMEOUT HANDLING (15-Minute Timeout)
+  // 1 & 4. TIMEOUT & EXECUTION HANDLING (15-Minute Timeout)
   const TIMEOUT_MS = 15 * 60 * 1000;
   let timeoutHandle;
   const timeoutPromise = new Promise((_, reject) => {
@@ -129,8 +138,8 @@ export default async function handler(req, res) {
     const orchestrator = new OrchestrationEngine();
     const result = await Promise.race([
       orchestrator.generateFullVideo({
-        topic: targetTopic,
-        niche: targetNiche,
+        topic: cleanTopic,
+        niche: cleanNiche,
         uploadToYouTube: uploadToYouTube !== false,
         channelId
       }),
@@ -139,13 +148,13 @@ export default async function handler(req, res) {
 
     clearTimeout(timeoutHandle);
 
-    console.log(`[${new Date().toISOString()}] ✅ Pipeline successfully completed for "${targetTopic}"`);
+    console.log(`[${new Date().toISOString()}] ✅ Pipeline successfully completed for "${cleanTopic}"`);
 
     return res.status(200).json({
       status: 'success',
       trigger: isCron ? 'vercel_cron' : 'manual_post',
       videoUrl: result.youtubeUrl,
-      title: result.script?.title || targetTopic,
+      title: result.script?.title || cleanTopic,
       videoDuration: result.duration || 60,
       generationTime: result.timeTaken || 15,
       views: 0,
@@ -153,12 +162,13 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     clearTimeout(timeoutHandle);
-    console.error(`[${new Date().toISOString()}] ❌ Orchestration error:`, error);
+    // Log complete stack internally without leaking details to public HTTP caller
+    console.error(`[${new Date().toISOString()}] ❌ Orchestration internal error:`, error);
 
     return res.status(500).json({
       status: 'error',
-      message: error.message || 'Video generation failed',
-      code: error.code || 'UNKNOWN_ERROR',
+      message: 'Video generation failed. Please try again.',
+      code: error.code || 'GENERATION_FAILED',
       timestamp: new Date().toISOString()
     });
   }
