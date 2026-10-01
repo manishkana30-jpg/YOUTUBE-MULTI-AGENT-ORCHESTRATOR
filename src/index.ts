@@ -17,6 +17,7 @@ import { getWorkflowMissionControlHtml } from './services/workflow-orchestrator.
 import { youtubeVideoOrchestrator } from './agents/video-orchestrator.js';
 import { getOrchestratorUiHtml } from './services/video-orchestrator-ui.js';
 import { getProductionDashboardUiHtml } from './services/production-dashboard-ui.js';
+import { sequentialPipelineController } from './services/sequential-pipeline.js';
 
 dotenv.config();
 
@@ -190,6 +191,13 @@ app.get(['/api/quality/audit', '/quality/audit'], async (req: Request, res: Resp
     strictThreshold: 90,
     ...audit
   });
+});
+
+// 4c. Master Directive Sequential Pipeline Endpoint
+app.all(['/api/pipeline/sequential', '/pipeline/sequential'], (req: Request, res: Response) => {
+  const niche = (req.query.niche as string) || (req.body?.niche as string) || 'AI Agent Tools / Autonomous Multi-Agent Swarms';
+  const pipelineOutput = sequentialPipelineController.executePipeline(niche);
+  res.json(pipelineOutput);
 });
 
 // 5. YouTube OAuth Web App - Initiation Endpoint (Works on Vercel & Local)
