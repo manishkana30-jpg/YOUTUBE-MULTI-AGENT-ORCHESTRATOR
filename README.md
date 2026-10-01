@@ -137,3 +137,56 @@ To deploy on Render:
 
 ### 2. Vercel Deployment (`vercel.json`)
 The repository includes `vercel.json` configured for serverless API and monitoring dashboard deployment. Simply import the repository in Vercel and set your environment variables.
+
+---
+
+## 🎬 5-Agent YouTube Video Generator (`/generator`)
+
+**Platform:** `youtube-multi-agent-orchestrator.vercel.app`
+
+Autonomous end-to-end video production from a single topic input to a published YouTube video URL:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│          USER INPUT: Topic / Keyword / Niche               │
+└────────────────────────────────────────────────────────────┘
+                            ↓
+┌────────────────────────────────────────────────────────────┐
+│     MASTER ORCHESTRATOR AGENT                              │
+│  (Coordinates all sub-agents, manages workflow)            │
+└────────────────────────────────────────────────────────────┘
+                            ↓
+        ┌───────────────────┬───────────────────┐
+        ↓                   ↓                   ↓
+    [Agent 1]          [Agent 2]          [Agent 3]
+   SCRIPT GEN          VOICEOVER GEN      FOOTAGE SOURCER
+   (Gemini API)        (ElevenLabs API)   (Pexels API)
+        ↓                   ↓                   ↓
+    Script.txt         voiceover.mp3       footage/[].mp4
+        
+        └───────────────────┬───────────────────┘
+                            ↓
+                    [Agent 4]
+                  VIDEO EDITOR
+                 (FFmpeg Audio/Video Sync)
+                            ↓
+                      video.mp4
+                            ↓
+                    [Agent 5]
+                   YOUTUBE UPLOADER
+                  (YouTube API v3)
+                            ↓
+        ┌────────────────────────────────────┐
+        │  VIDEO PUBLISHED TO YOUTUBE        │
+        │  View: youtube.com/watch?v=[ID]    │
+        └────────────────────────────────────┘
+```
+
+### Endpoints
+* **Interactive Mission Control UI**: [`http://localhost:3001/generator`](http://localhost:3001/generator) (or `/orchestrator`)
+* **API Trigger**: `POST /api/orchestrator/generate` (`{ "topic": "Learn Python in 10 Minutes" }`)
+* **API Progress Polling**: `GET /api/orchestrator/status`
+* **Video Stream**: `GET /videos/:filename`
+* **Voiceover Stream**: `GET /audio/:filename`
+* **Stock Footage Stream**: `GET /footage/:filename`
+* **Royalty-Free Music**: `GET /music/:filename`
