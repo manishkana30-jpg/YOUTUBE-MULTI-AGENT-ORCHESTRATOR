@@ -10,6 +10,7 @@ import { waitUntil } from '@vercel/functions';
 import { qualityAuditor } from './services/quality-auditor.js';
 import { getTopicData } from './services/topic-content.js';
 import { getDynamicVideoPlayerHtml } from './services/video-player-html.js';
+import { contentMap, getSmartVideoSystemHtml } from './services/smart-video-system.js';
 
 dotenv.config();
 
@@ -1212,6 +1213,58 @@ app.get(['/scripts/:scriptFile', '/api/scripts/:scriptFile'], (req: Request, res
 // 10. Dynamic Video Player Web App (JavaScript DOM Architecture)
 app.get(['/video', '/course/:topic', '/python', '/javascript', '/webdev', '/ai'], (req: Request, res: Response) => {
   res.send(getDynamicVideoPlayerHtml());
+});
+
+// 11. Audio Voiceover Files API
+app.get(['/audio/:filename', '/api/audio/:filename'], (req: Request, res: Response) => {
+  const rawFilename = req.params.filename;
+  const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || '';
+  const audioPath = path.resolve(process.cwd(), 'assets', 'audio', filename);
+  const fallbackAudio = path.resolve(process.cwd(), 'assets', 'audio', 'python_voiceover.mp3');
+
+  const targetPath = fs.existsSync(audioPath) ? audioPath : fallbackAudio;
+
+  if (fs.existsSync(targetPath)) {
+    res.setHeader('Content-Type', 'audio/mpeg');
+    fs.createReadStream(targetPath).pipe(res);
+  } else {
+    res.status(404).json({ error: 'Audio file not found' });
+  }
+});
+
+// 12. Visuals Timing JSON API
+app.get(['/data/:filename', '/api/data/:filename'], (req: Request, res: Response) => {
+  const rawFilename = req.params.filename;
+  const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || '';
+  const topicMatch = filename.match(/^([a-z0-9_-]+)_visuals\.json$/i);
+  const topic = topicMatch ? topicMatch[1] : filename.replace('.json', '');
+  const item = (contentMap as any)[topic] || contentMap.python;
+  res.json(item.visuals);
+});
+
+// 13. Dynamic Thumbnail Images API
+app.get(['/thumbnails/:filename', '/api/thumbnails/:filename'], (req: Request, res: Response) => {
+  const rawFilename = req.params.filename;
+  const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || '';
+  const topic = filename.replace(/\.(jpg|png|jpeg)$/i, '');
+  const item = (contentMap as any)[topic] || contentMap.python;
+
+  const svg = `<svg width="1280" height="720" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="${item.bgColor}"/>
+    <rect x="40" y="40" width="1200" height="640" rx="20" fill="#151A2E" stroke="${item.themeColor}" stroke-width="4"/>
+    <text x="640" y="320" font-family="Arial, sans-serif" font-size="52" font-weight="bold" fill="#FFFFFF" text-anchor="middle">${item.title}</text>
+    <text x="640" y="400" font-family="Arial, sans-serif" font-size="28" fill="${item.themeColor}" text-anchor="middle">VOICEOVER: ${item.voiceoverActor.toUpperCase()}</text>
+    <rect x="520" y="460" width="240" height="50" rx="25" fill="${item.themeColor}"/>
+    <text x="640" y="493" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#000000" text-anchor="middle">WATCH NOW</text>
+  </svg>`;
+
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.send(svg);
+});
+
+// 14. Smart Video Content System Web App
+app.get(['/smart-video', '/api/smart-video'], (req: Request, res: Response) => {
+  res.send(getSmartVideoSystemHtml());
 });
 
 // Fallback route: Redirect any unhandled paths to dashboard
