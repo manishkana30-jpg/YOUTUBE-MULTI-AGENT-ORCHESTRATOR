@@ -11,9 +11,17 @@
     "api/index.js": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "api/generate-video.js": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   },
   "rewrites": [
+    {
+      "source": "/api/generate-video",
+      "destination": "/api/generate-video"
+    },
     {
       "source": "/(.*)",
       "destination": "/api"
