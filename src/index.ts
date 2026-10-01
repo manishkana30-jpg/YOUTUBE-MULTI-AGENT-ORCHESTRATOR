@@ -1476,10 +1476,22 @@ app.get(['/api/orchestrator/status', '/orchestrator/status'], (req: Request, res
   res.json(youtubeVideoOrchestrator.getProgress());
 });
 
-// 21. Main Vercel Video Generation API (POST /api/generate-video)
-app.post(['/api/generate-video', '/generate-video'], async (req: Request, res: Response) => {
-  const { topic, niche, uploadToYouTube, channelId } = req.body || {};
-  const targetTopic = topic || 'Learn Python in 10 Minutes';
+// 21. Main Vercel Video Generation API (GET for Vercel Cron 9 AM UTC, POST for Dashboard)
+app.all(['/api/generate-video', '/generate-video'], async (req: Request, res: Response) => {
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const TRENDING = [
+    'Learn Python in 10 Minutes (Complete Beginner Guide)',
+    'Modern JavaScript Async Mastery: Event Loop & Promises',
+    'Building Autonomous Multi-Agent AI Swarms with MCP',
+    'Full Stack Web Development in 2026: Roadmap & Architecture'
+  ];
+
+  const body = req.body || {};
+  const query = req.query || {};
+  const targetTopic = body.topic || query.topic || TRENDING[Math.floor(Math.random() * TRENDING.length)];
 
   try {
     console.log(`\n======================================================`);

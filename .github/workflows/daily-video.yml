@@ -1,0 +1,45 @@
+name: Generate Daily YouTube Video
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily at 9 AM UTC
+  workflow_dispatch:      # Allow manual one-click trigger from GitHub Actions
+
+jobs:
+  generate-video:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate and Upload Video
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          ELEVEN_LABS_API_KEY: ${{ secrets.ELEVEN_LABS_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_OAUTH_CLIENT: ${{ secrets.YOUTUBE_OAUTH_CLIENT }}
+          NODE_ENV: production
+        run: |
+          node scripts/generate-video.js
+
+      - name: Log Results
+        run: echo "✅ Daily Video generated and published to YouTube successfully!"
