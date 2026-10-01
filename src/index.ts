@@ -11,6 +11,7 @@ import { qualityAuditor } from './services/quality-auditor.js';
 import { getTopicData } from './services/topic-content.js';
 import { getDynamicVideoPlayerHtml } from './services/video-player-html.js';
 import { contentMap, getSmartVideoSystemHtml } from './services/smart-video-system.js';
+import { getObsHybridStudioHtml, generateObsSceneCollectionJson } from './services/obs-hybrid-video.js';
 
 dotenv.config();
 
@@ -1265,6 +1266,96 @@ app.get(['/thumbnails/:filename', '/api/thumbnails/:filename'], (req: Request, r
 // 14. Smart Video Content System Web App
 app.get(['/smart-video', '/api/smart-video'], (req: Request, res: Response) => {
   res.send(getSmartVideoSystemHtml());
+});
+
+// 15. OBS Studio Professional Hybrid Studio Controller
+app.get(['/hybrid-studio', '/api/hybrid-studio'], (req: Request, res: Response) => {
+  res.send(getObsHybridStudioHtml());
+});
+
+// Download OBS Scene Collection JSON
+app.get('/api/obs-hybrid/download-scenes', (req: Request, res: Response) => {
+  const json = generateObsSceneCollectionJson('NEXO KIDS');
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', 'attachment; filename="NEXO_OBS_Hybrid_Scenes.json"');
+  res.send(json);
+});
+
+// OBS Browser Source: Clean Transparent Lower Third Overlay
+app.get('/hybrid-studio/overlays/lower-third', (req: Request, res: Response) => {
+  const mode = req.query.mode === 'outro' ? 'outro' : 'intro';
+  const name = mode === 'outro' ? '👉 Subscribe & Comment' : 'Alex Rivera';
+  const title = mode === 'outro' ? 'NEXO Engineering Tutorials • New Episodes Daily' : 'Senior Systems Architect • NEXO Channel';
+
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .lt-wrapper {
+      position: absolute;
+      bottom: 60px;
+      left: 80px;
+      background: rgba(10, 14, 26, 0.95);
+      border-left: 6px solid #3B82F6;
+      border-radius: 12px;
+      padding: 1rem 1.6rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(59, 130, 246, 0.4);
+      animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .name { font-size: 1.4rem; font-weight: 800; color: #FFF; }
+    .title { font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; color: #60A5FA; margin-top: 0.2rem; }
+    @keyframes slideIn {
+      from { transform: translateX(-100px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="lt-wrapper">
+    <div class="name">${name}</div>
+    <div class="title">${title}</div>
+  </div>
+</body>
+</html>`);
+});
+
+// OBS Browser Source: Kinetic Arrows & Highlights
+app.get('/hybrid-studio/overlays/kinetic', (req: Request, res: Response) => {
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
+    .arrow {
+      position: absolute;
+      top: 38%;
+      left: 28%;
+      color: #EF4444;
+      font-size: 3rem;
+      font-weight: 900;
+      filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.9));
+      animation: bounce 1.2s infinite alternate;
+    }
+    @keyframes bounce {
+      from { transform: translateX(0); }
+      to { transform: translateX(-20px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="arrow">➔ KEY CONCEPT</div>
+</body>
+</html>`);
 });
 
 // Fallback route: Redirect any unhandled paths to dashboard

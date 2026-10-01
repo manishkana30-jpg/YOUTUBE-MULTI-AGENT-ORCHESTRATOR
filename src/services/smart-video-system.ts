@@ -689,6 +689,9 @@ export function getSmartVideoSystemHtml(): string {
       <a href="?topic=ai" class="nav-link" id="nav-ai" onclick="switchTopic('ai', event)">
         🤖 AI & ML
       </a>
+      <a href="/hybrid-studio" class="nav-link" style="border-color: #3B82F6; background: rgba(59, 130, 246, 0.15); color: #93C5FD;">
+        🎙️ OBS Hybrid Studio
+      </a>
     </nav>
   </div>
 
