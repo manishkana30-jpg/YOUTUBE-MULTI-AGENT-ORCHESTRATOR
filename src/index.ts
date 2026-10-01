@@ -1476,6 +1476,37 @@ app.get(['/api/orchestrator/status', '/orchestrator/status'], (req: Request, res
   res.json(youtubeVideoOrchestrator.getProgress());
 });
 
+// 21. Main Vercel Video Generation API (POST /api/generate-video)
+app.post(['/api/generate-video', '/generate-video'], async (req: Request, res: Response) => {
+  const { topic, niche, uploadToYouTube, channelId } = req.body || {};
+  const targetTopic = topic || 'Learn Python in 10 Minutes';
+
+  try {
+    console.log(`\n======================================================`);
+    console.log(`[API /api/generate-video] Triggered for: "${targetTopic}"`);
+    console.log(`======================================================\n`);
+
+    const youtubeUrl = await youtubeVideoOrchestrator.generateVideo(targetTopic);
+    const progress = youtubeVideoOrchestrator.getProgress();
+
+    return res.status(200).json({
+      status: 'success',
+      videoUrl: youtubeUrl,
+      title: progress.script?.title || targetTopic,
+      videoDuration: progress.video?.duration || 60,
+      generationTime: parseFloat(((Date.now() - (progress.startTime || Date.now())) / 1000).toFixed(1)),
+      views: 0,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('❌ Error in /api/generate-video:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: error?.message || 'Video generation failed'
+    });
+  }
+});
+
 // Fallback route: Redirect any unhandled paths to dashboard
 app.use((req: Request, res: Response) => {
   res.redirect('/');
