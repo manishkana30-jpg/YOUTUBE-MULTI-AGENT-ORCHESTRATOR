@@ -4,13 +4,25 @@ import { mcpSerpApiClient, TrendingTopicResult } from '../tools/mcp-serpapi.js';
 import { db } from '../db/client.js';
 import { captureAgentError } from '../services/sentry.js';
 
+// Strict Zod schema for structured educational video scenes
+export const VideoSceneSchema = z.object({
+  sceneNumber: z.number(),
+  type: z.enum(['HOOK', 'PROBLEM', 'SOLUTION', 'TAKEAWAY']),
+  headline: z.string().min(5),
+  subtitle: z.string().min(5),
+  narrationScript: z.string().min(10)
+});
+
+export type VideoScene = z.infer<typeof VideoSceneSchema>;
+
 // Strict Zod schema for Content Agent output
 export const ContentAgentOutputSchema = z.object({
   videoTitle: z.string().min(5),
   alternativeTitles: z.array(z.string()).min(2),
   description: z.string().min(20),
   cta: z.string().min(5),
-  trendingContextUsed: z.string().optional()
+  trendingContextUsed: z.string().optional(),
+  scenes: z.array(VideoSceneSchema).min(3).optional()
 });
 
 export type ContentAgentOutput = z.infer<typeof ContentAgentOutputSchema>;
@@ -36,15 +48,45 @@ export class ContentAgent {
       .join('\n');
 
     // 2. Gemini Prompt formulation
-    const systemPrompt = `You are the Content Agent for an automated YouTube channel orchestrator.
-Your job is topic copywriting, compelling title generation, and structured video descriptions based on current trends.
+    const systemPrompt = `You are the Lead Content Director and Educational Scriptwriter for an automated YouTube channel.
+Your job is topic copywriting, compelling title generation, and writing a 4-part educational video narrative script (Hook -> Problem -> Solution -> Takeaway).
 Respond STRICTLY with a valid JSON object matching this schema:
 {
   "videoTitle": "High-impact, curiosity-driven, clickable title under 70 characters without spam",
   "alternativeTitles": ["A/B title option 1", "A/B title option 2", "A/B title option 3"],
   "description": "Full structured YouTube description with a 2-line hook, key chapters (00:00 Intro, etc.), value bullets, and links placeholder",
   "cta": "Engaging, value-focused Call To Action asking viewers to subscribe or check resources",
-  "trendingContextUsed": "Summary of trend insights leveraged"
+  "trendingContextUsed": "Summary of trend insights leveraged",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "type": "HOOK",
+      "headline": "Short punchy hook under 35 chars",
+      "subtitle": "Curiosity gap or bold paradox",
+      "narrationScript": "Spoken voiceover script for scene 1 (1-2 clear punchy sentences)."
+    },
+    {
+      "sceneNumber": 2,
+      "type": "PROBLEM",
+      "headline": "The core failure or obstacle",
+      "subtitle": "Why standard methods crash or fail in production",
+      "narrationScript": "Spoken voiceover script for scene 2 (1-2 clear punchy sentences)."
+    },
+    {
+      "sceneNumber": 3,
+      "type": "SOLUTION",
+      "headline": "The architectural breakthrough",
+      "subtitle": "How the solution or code pattern works",
+      "narrationScript": "Spoken voiceover script for scene 3 (1-2 clear punchy sentences)."
+    },
+    {
+      "sceneNumber": 4,
+      "type": "TAKEAWAY",
+      "headline": "Actionable blueprint and CTA",
+      "subtitle": "Subscribe to NEXO KIDS for daily autonomous engineering",
+      "narrationScript": "Spoken voiceover script for scene 4 summarizing the key lesson and asking to subscribe."
+    }
+  ]
 }`;
 
     const userPrompt = `TOPIC BRIEF: ${topicBrief}
@@ -111,7 +153,37 @@ Generate a viral, high-value, highly readable content plan now.`;
         trends.map((t) => `• ${t.title}`).join('\n') +
         `\n\n💻 Full Open Source Code in Description!`,
       cta: 'Subscribe and drop a comment if you want the open-source GitHub repository and deployment template!',
-      trendingContextUsed: trends[0]?.title || 'Multi-agent orchestration and MCP protocol'
+      trendingContextUsed: trends[0]?.title || 'Multi-agent orchestration and MCP protocol',
+      scenes: [
+        {
+          sceneNumber: 1,
+          type: 'HOOK',
+          headline: 'Stop Chaining Fragile Prompts',
+          subtitle: 'Why Single Prompts Fail in Production',
+          narrationScript: 'Stop relying on basic prompts. If an agent crashes midway, your entire workflow breaks and loses state.'
+        },
+        {
+          sceneNumber: 2,
+          type: 'PROBLEM',
+          headline: 'Linear ReAct Loops Are Dead',
+          subtitle: 'Infinite Retries & Context Window Pollution',
+          narrationScript: 'Standard linear agent loops get stuck in infinite retries, wasting your API credits with hallucinated data.'
+        },
+        {
+          sceneNumber: 3,
+          type: 'SOLUTION',
+          headline: 'Supervisor-Worker AI Swarms',
+          subtitle: 'Hierarchical Orchestration with Model Context Protocol',
+          narrationScript: 'The fix is a hierarchical supervisor swarm. The controller agent delegates subtasks to specialized workers using MCP.'
+        },
+        {
+          sceneNumber: 4,
+          type: 'TAKEAWAY',
+          headline: 'Production AI Blueprint',
+          subtitle: 'Subscribe to NEXO KIDS for Daily Autonomous Code',
+          narrationScript: 'Switch to multi-agent swarms today for 10x faster execution and zero crashes. Subscribe to NEXO KIDS for daily code.'
+        }
+      ]
     };
   }
 }

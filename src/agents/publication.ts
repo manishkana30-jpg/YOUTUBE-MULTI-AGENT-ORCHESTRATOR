@@ -81,8 +81,12 @@ export class PublicationAgent {
 
         console.log(`[${this.name}] Video metadata configured for YouTube API (Status: Scheduled for ${scheduledPublishTime}).`);
         
-        // Generate or render high-impact motion title card video
-        const videoPath = await videoGeneratorService.generateRender(payload.content.videoTitle, 6, 'NEXO KIDS');
+        // Generate or render high-impact multi-scene educational video with voiceover
+        const videoPath = await videoGeneratorService.generateMultiSceneVideo({
+          title: payload.content.videoTitle,
+          channelTitle: 'NEXO KIDS',
+          scenes: (payload.content as any).scenes
+        });
 
         if (fs.existsSync(videoPath)) {
           const fileSizeBytes = fs.statSync(videoPath).size;
