@@ -81,8 +81,8 @@ export class PublicationAgent {
 
         console.log(`[${this.name}] Video metadata configured for YouTube API (Status: Scheduled for ${scheduledPublishTime}).`);
         
-        // Generate or render target video media via FFmpeg service
-        const videoPath = await videoGeneratorService.generateRender(payload.content.videoTitle, 5);
+        // Generate or render high-impact motion title card video
+        const videoPath = await videoGeneratorService.generateRender(payload.content.videoTitle, 6, 'NEXO KIDS');
 
         if (fs.existsSync(videoPath)) {
           const fileSizeBytes = fs.statSync(videoPath).size;
