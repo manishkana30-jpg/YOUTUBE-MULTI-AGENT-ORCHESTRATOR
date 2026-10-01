@@ -14,6 +14,8 @@ import { contentMap, getSmartVideoSystemHtml } from './services/smart-video-syst
 import { getObsHybridStudioHtml, generateObsSceneCollectionJson } from './services/obs-hybrid-video.js';
 import { getVoiceoverStudioHtml } from './services/voiceover-studio.js';
 import { getWorkflowMissionControlHtml } from './services/workflow-orchestrator.js';
+import { youtubeVideoOrchestrator } from './agents/video-orchestrator.js';
+import { getOrchestratorUiHtml } from './services/video-orchestrator-ui.js';
 
 dotenv.config();
 
@@ -869,6 +871,9 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
           <div class="badge-dot"></div>
           CRON 09:00 UTC Active
         </div>
+        <a href="/generator" class="btn" style="background: linear-gradient(135deg, #FF2A55, #E11D48); box-shadow: 0 4px 15px rgba(255, 42, 85, 0.4); text-decoration: none;">
+          <span>⚡ 5-Agent Generator</span>
+        </a>
         <a href="/video?topic=python" class="btn" style="background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(99, 102, 241, 0.5); text-decoration: none;">
           <span>🎬 Dynamic Video Player</span>
         </a>
@@ -1168,7 +1173,17 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
 
 // 8. Dynamic Video Content Streaming API (Byte-range request support)
 app.get(['/videos/:filename', '/api/videos/:filename'], (req: Request, res: Response) => {
-  const videoPath = path.resolve(process.cwd(), 'assets', 'fallback.mp4');
+  const rawFilename = req.params.filename;
+  const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || '';
+
+  const candidates = [
+    path.resolve(process.cwd(), 'videos', filename),
+    path.resolve(process.cwd(), 'data', 'renders', filename),
+    path.resolve(process.cwd(), 'assets', filename),
+    path.resolve(process.cwd(), 'assets', 'fallback.mp4')
+  ];
+
+  const videoPath = candidates.find(c => fs.existsSync(c)) || candidates[candidates.length - 1];
 
   if (!fs.existsSync(videoPath)) {
     return res.status(404).json({ error: 'Video stream asset not found' });
@@ -1203,6 +1218,53 @@ app.get(['/videos/:filename', '/api/videos/:filename'], (req: Request, res: Resp
   }
 });
 
+// 8b. Stock Footage Clips Streaming API
+app.get(['/footage/:filename', '/api/footage/:filename'], (req: Request, res: Response) => {
+  const rawFilename = req.params.filename;
+  const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || '';
+  const candidates = [
+    path.resolve(process.cwd(), 'footage', filename),
+    path.resolve(process.cwd(), 'assets', filename),
+    path.resolve(process.cwd(), 'assets', 'fallback.mp4')
+  ];
+  const targetPath = candidates.find(c => fs.existsSync(c));
+
+  if (targetPath) {
+    res.setHeader('Content-Type', 'video/mp4');
+    fs.createReadStream(targetPath).pipe(res);
+  } else {
+    res.status(404).json({ error: 'Footage clip not found' });
+  }
+});
+
+// 8c. Background Royalty-Free Music API
+app.get(['/music/:filename', '/api/music/:filename'], (req: Request, res: Response) => {
+  const rawFilename = req.params.filename;
+  const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || 'background_royalty_free.mp3';
+  const musicPath = path.resolve(process.cwd(), 'music', filename);
+  if (fs.existsSync(musicPath)) {
+    res.setHeader('Content-Type', 'audio/mpeg');
+    fs.createReadStream(musicPath).pipe(res);
+  } else {
+    res.status(404).json({ error: 'Music file not found' });
+  }
+});
+
+// 8d. Static Assets API
+app.get(['/assets/:filename', '/api/assets/:filename'], (req: Request, res: Response) => {
+  const rawFilename = req.params.filename;
+  const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || '';
+  const assetPath = path.resolve(process.cwd(), 'assets', filename);
+  if (fs.existsSync(assetPath)) {
+    const ext = path.extname(filename).toLowerCase();
+    const mime = ext === '.mp4' ? 'video/mp4' : (ext === '.mp3' ? 'audio/mpeg' : 'application/octet-stream');
+    res.setHeader('Content-Type', mime);
+    fs.createReadStream(assetPath).pipe(res);
+  } else {
+    res.status(404).json({ error: 'Asset not found' });
+  }
+});
+
 // 9. Dynamic Voiceover Script API
 app.get(['/scripts/:scriptFile', '/api/scripts/:scriptFile'], (req: Request, res: Response) => {
   const rawScriptFile = req.params.scriptFile;
@@ -1222,12 +1284,15 @@ app.get(['/video', '/course/:topic', '/python', '/javascript', '/webdev', '/ai']
 app.get(['/audio/:filename', '/api/audio/:filename'], (req: Request, res: Response) => {
   const rawFilename = req.params.filename;
   const filename = (Array.isArray(rawFilename) ? rawFilename[0] : rawFilename) || '';
-  const audioPath = path.resolve(process.cwd(), 'assets', 'audio', filename);
-  const fallbackAudio = path.resolve(process.cwd(), 'assets', 'audio', 'python_voiceover.mp3');
+  const candidates = [
+    path.resolve(process.cwd(), 'audio', filename),
+    path.resolve(process.cwd(), 'assets', 'audio', filename),
+    path.resolve(process.cwd(), 'assets', 'audio', 'python_voiceover.mp3')
+  ];
 
-  const targetPath = fs.existsSync(audioPath) ? audioPath : fallbackAudio;
+  const targetPath = candidates.find(c => fs.existsSync(c));
 
-  if (fs.existsSync(targetPath)) {
+  if (targetPath) {
     res.setHeader('Content-Type', 'audio/mpeg');
     fs.createReadStream(targetPath).pipe(res);
   } else {
@@ -1368,6 +1433,47 @@ app.get(['/voiceover-studio', '/api/voiceover-studio'], (req: Request, res: Resp
 // 17. Complete 4-Day Video Production Workflow & Editing Checklist
 app.get(['/workflow', '/api/workflow'], (req: Request, res: Response) => {
   res.send(getWorkflowMissionControlHtml());
+});
+
+// 18. 5-Agent YouTube Video Generator UI (youtube-multi-agent-orchestrator)
+app.get(['/generator', '/api/generator', '/orchestrator', '/api/orchestrator'], (req: Request, res: Response) => {
+  res.send(getOrchestratorUiHtml());
+});
+
+// 19. 5-Agent YouTube Video Generator API Trigger
+app.post(['/api/orchestrator/generate', '/orchestrator/generate'], async (req: Request, res: Response) => {
+  try {
+    const { topic } = req.body;
+    const targetTopic = topic || 'Master Python in 10 Minutes';
+    console.log(`\n======================================================`);
+    console.log(`[API] 5-Agent Video Generator Triggered: "${targetTopic}"`);
+    console.log(`======================================================\n`);
+
+    const youtubeUrl = await youtubeVideoOrchestrator.generateVideo(targetTopic);
+    const progress = youtubeVideoOrchestrator.getProgress();
+
+    res.json({
+      success: true,
+      topic: targetTopic,
+      youtubeUrl,
+      script: progress.script,
+      voiceover: progress.voiceover,
+      footage: progress.footage,
+      video: progress.video,
+      duration: progress.video?.duration
+    });
+  } catch (err: any) {
+    console.error('[API] 5-Agent generation error:', err);
+    res.status(500).json({
+      success: false,
+      error: err?.message || 'Pipeline execution failed'
+    });
+  }
+});
+
+// 20. 5-Agent YouTube Video Generator Status Polling API
+app.get(['/api/orchestrator/status', '/orchestrator/status'], (req: Request, res: Response) => {
+  res.json(youtubeVideoOrchestrator.getProgress());
 });
 
 // Fallback route: Redirect any unhandled paths to dashboard

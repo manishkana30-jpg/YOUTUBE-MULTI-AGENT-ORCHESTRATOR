@@ -28,6 +28,12 @@ obj/
 # Logs & temp
 data/*.json
 data/renders/
+# Media & Render Artifacts
+audio/
+footage/
+videos/
+scripts/script_*.json
+scripts/script_*.txt
 *.mp4
 !assets/fallback.mp4
 *.log
