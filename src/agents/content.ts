@@ -7,7 +7,7 @@ import { captureAgentError } from '../services/sentry.js';
 // Strict Zod schema for structured educational video scenes
 export const VideoSceneSchema = z.object({
   sceneNumber: z.number(),
-  type: z.enum(['HOOK', 'PROBLEM', 'SOLUTION', 'TAKEAWAY']),
+  type: z.enum(['INTRO', 'HOOK', 'PROBLEM', 'SOLUTION', 'EXAMPLES', 'TAKEAWAY', 'CTA']),
   headline: z.string().min(5),
   subtitle: z.string().min(5),
   narrationScript: z.string().min(10)
@@ -47,44 +47,67 @@ export class ContentAgent {
       .map((t, idx) => `[Source ${idx + 1}: ${t.source}] ${t.title} - ${t.snippet}`)
       .join('\n');
 
-    // 2. Gemini Prompt formulation
+    // 2. Gemini Prompt formulation following standard 5-part video script template (10-15 minutes)
     const systemPrompt = `You are the Lead Content Director and Educational Scriptwriter for an automated YouTube channel.
-Your job is topic copywriting, compelling title generation, and writing a 4-part educational video narrative script (Hook -> Problem -> Solution -> Takeaway).
+Your job is topic copywriting, compelling title generation, and writing a 5-part educational video narrative script strictly adhering to this production standard:
+
+VIDEO SCRIPT TEMPLATE (10-15 minutes):
+[INTRO - 1 min] Hook viewers in 3 seconds
+[PROBLEM - 2 min] Make it relatable  
+[SOLUTION - 5-7 min] Teach step-by-step with visuals
+[EXAMPLES - 2 min] Show real proof
+[CTA - 1 min] Tell them what to do next
+
+DESIGN FOR EACH SECTION:
+- Text appears when narration mentions it
+- Animation every 5 seconds
+- Color consistent with brand
+- Transitions smooth and professional
+- Music matches content mood
+- Captions for every word
+
 Respond STRICTLY with a valid JSON object matching this schema:
 {
   "videoTitle": "High-impact, curiosity-driven, clickable title under 70 characters without spam",
   "alternativeTitles": ["A/B title option 1", "A/B title option 2", "A/B title option 3"],
-  "description": "Full structured YouTube description with a 2-line hook, key chapters (00:00 Intro, etc.), value bullets, and links placeholder",
-  "cta": "Engaging, value-focused Call To Action asking viewers to subscribe or check resources",
+  "description": "Full structured YouTube description with a 2-line hook, key chapters matching the 5 parts (00:00 Intro, 01:00 Problem, 03:00 Solution, 09:00 Examples, 11:00 CTA), value bullets, and links placeholder",
+  "cta": "Engaging, value-focused Call To Action asking viewers to subscribe and comment",
   "trendingContextUsed": "Summary of trend insights leveraged",
   "scenes": [
     {
       "sceneNumber": 1,
-      "type": "HOOK",
+      "type": "INTRO",
       "headline": "Short punchy hook under 35 chars",
       "subtitle": "Curiosity gap or bold paradox",
-      "narrationScript": "Spoken voiceover script for scene 1 (1-2 clear punchy sentences)."
+      "narrationScript": "Spoken hook sentence for the first 3 seconds."
     },
     {
       "sceneNumber": 2,
       "type": "PROBLEM",
-      "headline": "The core failure or obstacle",
-      "subtitle": "Why standard methods crash or fail in production",
-      "narrationScript": "Spoken voiceover script for scene 2 (1-2 clear punchy sentences)."
+      "headline": "The relatable core obstacle",
+      "subtitle": "Why standard methods crash or fail in practice",
+      "narrationScript": "Spoken voiceover explaining the relatable problem."
     },
     {
       "sceneNumber": 3,
       "type": "SOLUTION",
-      "headline": "The architectural breakthrough",
+      "headline": "Step-by-step visual breakthrough",
       "subtitle": "How the solution or code pattern works",
-      "narrationScript": "Spoken voiceover script for scene 3 (1-2 clear punchy sentences)."
+      "narrationScript": "Spoken voiceover teaching the solution step-by-step."
     },
     {
       "sceneNumber": 4,
-      "type": "TAKEAWAY",
+      "type": "EXAMPLES",
+      "headline": "Real case studies and proof",
+      "subtitle": "Measurable results and real benchmarks",
+      "narrationScript": "Spoken voiceover showing concrete proof and real examples."
+    },
+    {
+      "sceneNumber": 5,
+      "type": "CTA",
       "headline": "Actionable blueprint and CTA",
-      "subtitle": "Subscribe to NEXO KIDS for daily autonomous engineering",
-      "narrationScript": "Spoken voiceover script for scene 4 summarizing the key lesson and asking to subscribe."
+      "subtitle": "Subscribe to NEXO KIDS & drop questions below",
+      "narrationScript": "Spoken voiceover summarizing key takeaway and asking viewers to subscribe."
     }
   ]
 }`;
@@ -166,31 +189,38 @@ Generate a viral, high-value, highly readable content plan now.`;
         scenes: [
           {
             sceneNumber: 1,
-            type: 'HOOK',
-            headline: '90% of Content Creators Fail',
-            subtitle: 'Formula: Content = Information + Entertainment + Value',
+            type: 'INTRO',
+            headline: '90 PERCENT OF CREATORS FAIL',
+            subtitle: 'THE FORMULA: CONTENT = INFO + ENTERTAINMENT + VALUE',
             narrationScript: 'Ninety percent of people who create content fail because they do not understand this one secret formula.'
           },
           {
             sceneNumber: 2,
             type: 'PROBLEM',
-            headline: 'Why Boring Content Crashes',
-            subtitle: 'Static Slides & Zero Engagement Kill Viewer Retention',
-            narrationScript: 'Without the three pillars, you are just creating noise. Static slides and boring delivery cause viewers to leave instantly.'
+            headline: 'WHY BORING CONTENT CRASHES',
+            subtitle: 'STATIC SLIDES AND ZERO ENGAGEMENT KILL RETENTION',
+            narrationScript: 'Without the three pillars, you are just creating noise. Static slides and boring delivery cause viewers to leave in seconds.'
           },
           {
             sceneNumber: 3,
             type: 'SOLUTION',
-            headline: 'The 3 Pillars of Great Content',
-            subtitle: '1. Educational Value  2. Emotional Hook  3. Clear CTA',
+            headline: 'THE 3 PILLARS OF GREAT CONTENT',
+            subtitle: '1. EDUCATIONAL VALUE  2. EMOTIONAL HOOK  3. CLEAR CTA',
             narrationScript: 'Great content combines three elements: educational value that teaches, emotional engagement that connects, and a clear call to action.'
           },
           {
             sceneNumber: 4,
-            type: 'TAKEAWAY',
-            headline: 'Start Creating Content Today',
-            subtitle: 'Subscribe to NEXO KIDS for Daily Creator Blueprints',
-            narrationScript: 'Start creating today. Your first video will not be perfect, but it will be yours. Subscribe for daily creation blueprints.'
+            type: 'EXAMPLES',
+            headline: 'REAL PROOF AND METRICS',
+            subtitle: 'VIDEO GETS 1200 PERCENT MORE SHARES • 1B DAILY HOURS',
+            narrationScript: 'Video content generates twelve hundred percent more shares than static text, and viewers watch over one billion hours daily.'
+          },
+          {
+            sceneNumber: 5,
+            type: 'CTA',
+            headline: 'START CREATING CONTENT TODAY',
+            subtitle: 'YOUR FIRST VIDEO WILL BE YOURS • SUBSCRIBE FOR BLUEPRINTS',
+            narrationScript: 'Start creating today. Your first video will not be perfect, but it will be yours. Subscribe to NEXO KIDS right now for daily creator blueprints.'
           }
         ]
       };
@@ -205,11 +235,11 @@ Generate a viral, high-value, highly readable content plan now.`;
       ],
       description: `In this deep dive, we architect and deploy a production-grade multi-agent orchestrator that manages an entire YouTube channel autonomously.\n\n` +
         `⏱️ CHAPTERS:\n` +
-        `00:00 - The Problem with Single-Prompt AI Chains\n` +
-        `01:45 - High-Level Architecture (Orchestrator, Content, SEO, Design, Publication)\n` +
-        `04:30 - Supabase Schema for Content Calendars & Agent Logs\n` +
-        `07:15 - Model Context Protocol (MCP) Integration with SerpApi\n` +
-        `10:20 - Automated CRON Deployment on Render\n\n` +
+        `00:00 - Intro & Hook: The Problem with Single-Prompt AI Chains\n` +
+        `01:30 - Relatable Pain Point: Infinite Loops & Context Window Drift\n` +
+        `03:30 - Step-by-Step Architecture: Supervisor-Worker Swarms with MCP\n` +
+        `08:00 - Real Case Studies: Live Performance Benchmarks\n` +
+        `10:00 - Next Steps & Call to Action\n\n` +
         `🔥 Relevant Trends:\n` +
         trends.map((t) => `• ${t.title}`).join('\n') +
         `\n\n💻 Full Open Source Code in Description!`,
@@ -218,31 +248,38 @@ Generate a viral, high-value, highly readable content plan now.`;
       scenes: [
         {
           sceneNumber: 1,
-          type: 'HOOK',
-          headline: 'Stop Chaining Fragile Prompts',
-          subtitle: 'Why Single Prompts Fail in Production',
+          type: 'INTRO',
+          headline: 'STOP CHAINING FRAGILE PROMPTS',
+          subtitle: 'WHY SINGLE PROMPTS FAIL IN PRODUCTION',
           narrationScript: 'Stop relying on basic prompts. If an agent crashes midway, your entire workflow breaks and loses state.'
         },
         {
           sceneNumber: 2,
           type: 'PROBLEM',
-          headline: 'Linear ReAct Loops Are Dead',
-          subtitle: 'Infinite Retries & Context Window Pollution',
+          headline: 'LINEAR REACT LOOPS ARE DEAD',
+          subtitle: 'INFINITE RETRIES AND CONTEXT WINDOW POLLUTION',
           narrationScript: 'Standard linear agent loops get stuck in infinite retries, wasting your API credits with hallucinated data.'
         },
         {
           sceneNumber: 3,
           type: 'SOLUTION',
-          headline: 'Supervisor-Worker AI Swarms',
-          subtitle: 'Hierarchical Orchestration with Model Context Protocol',
+          headline: 'SUPERVISOR-WORKER AI SWARMS',
+          subtitle: 'HIERARCHICAL ORCHESTRATION WITH MODEL CONTEXT PROTOCOL',
           narrationScript: 'The fix is a hierarchical supervisor swarm. The controller agent delegates subtasks to specialized workers using MCP.'
         },
         {
           sceneNumber: 4,
-          type: 'TAKEAWAY',
-          headline: 'Production AI Blueprint',
-          subtitle: 'Subscribe to NEXO KIDS for Daily Autonomous Code',
-          narrationScript: 'Switch to multi-agent swarms today for 10x faster execution and zero crashes. Subscribe to NEXO KIDS for daily code.'
+          type: 'EXAMPLES',
+          headline: 'REAL BENCHMARKS & 10X SPEED',
+          subtitle: 'ZERO CRASHES AND 100 PERCENT REPRODUCIBILITY',
+          narrationScript: 'In production benchmarks, hierarchical swarms execute ten times faster with zero runtime crashes.'
+        },
+        {
+          sceneNumber: 5,
+          type: 'CTA',
+          headline: 'PRODUCTION AI BLUEPRINT',
+          subtitle: 'SUBSCRIBE TO NEXO KIDS FOR DAILY PRODUCTION CODE',
+          narrationScript: 'Switch to multi-agent swarms today for ten times faster execution. Subscribe to NEXO KIDS for daily code blueprints.'
         }
       ]
     };

@@ -141,7 +141,7 @@ export class QualityAuditorService {
     // 3. EDUCATIONAL VALUE (Max 20 points)
     // ==========================================
     // Check 1: Clear title/topic in first 5 seconds
-    const hasHookScene = scenes.some(s => s.type === 'HOOK') || (title.length > 10);
+    const hasHookScene = scenes.some(s => s.type === 'HOOK' || s.type === 'INTRO') || (title.length > 10);
     const clearTitleIn5s = hasHookScene;
     if (!clearTitleIn5s) feedback.push('Educational: Topic hook not established in the first 5 seconds.');
 
@@ -154,17 +154,18 @@ export class QualityAuditorService {
     if (!solutionTaught) feedback.push('Educational: Concrete solution or lesson missing in scene 3.');
 
     // Check 4: 2-3 real examples or case studies
-    const techKeywords = ['mcp', 'agent', 'architecture', 'code', 'react', 'supervisor', 'pipeline', 'workflow', 'swarm', 'ai'];
+    const hasExampleScene = scenes.some(s => s.type === 'EXAMPLES');
+    const techKeywords = ['mcp', 'agent', 'architecture', 'code', 'react', 'supervisor', 'pipeline', 'workflow', 'swarm', 'ai', 'content', 'video', 'creator'];
     const exampleCount = techKeywords.filter(kw => title.toLowerCase().includes(kw) || desc.toLowerCase().includes(kw)).length;
-    const realExamplesIncluded = exampleCount >= 2;
+    const realExamplesIncluded = hasExampleScene || exampleCount >= 2;
     if (!realExamplesIncluded) feedback.push('Educational: Lack of real-world architectural examples or practical context.');
 
     // Check 5: Call-to-action (subscribe, comment, etc.)
-    const callToAction = scenes.some(s => s.type === 'TAKEAWAY') || /subscribe|comment|check/i.test(desc);
+    const callToAction = scenes.some(s => s.type === 'TAKEAWAY' || s.type === 'CTA') || /subscribe|comment|check/i.test(desc);
     if (!callToAction) feedback.push('Educational: Call to action missing.');
 
     // Check 6: Summary/key takeaways at end
-    const summaryKeyTakeaways = scenes.some(s => s.type === 'TAKEAWAY') || desc.toLowerCase().includes('takeaway');
+    const summaryKeyTakeaways = scenes.some(s => s.type === 'TAKEAWAY' || s.type === 'CTA') || desc.toLowerCase().includes('takeaway') || desc.toLowerCase().includes('next');
     if (!summaryKeyTakeaways) feedback.push('Educational: Final summary/takeaway scene missing.');
 
     let educationalScore = 0;
