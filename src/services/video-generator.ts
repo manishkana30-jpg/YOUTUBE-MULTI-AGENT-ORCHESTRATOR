@@ -52,22 +52,78 @@ export class VideoGeneratorService {
   }
 
   /**
-   * Downloads natural voiceover audio using Google TTS.
+   * Downloads natural voiceover audio using Google TTS with robust chunking and FFmpeg concatenation.
    */
-  private async downloadTTS(text: string, outputPath: string): Promise<boolean> {
+  private async downloadTTS(rawText: string, outputPath: string): Promise<boolean> {
     try {
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(text)}`;
-      const response = await axios.get(url, {
-        responseType: 'arraybuffer',
-        timeout: 8000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      // Strip bracketed direction cues like [WARM SMILE], [LOWER VOICE], etc.
+      const text = (rawText || '').replace(/\[.*?\]/g, '').replace(/['":\\%]/g, '').trim();
+      if (!text) return false;
+
+      // Split into clean sentence phrases
+      const phrases = text.match(/[^.!?]+[.!?]+/g) || [text];
+      const validPhrases: string[] = [];
+
+      for (const p of phrases) {
+        const trimmed = p.trim();
+        if (trimmed.length <= 80) {
+          validPhrases.push(trimmed);
+        } else {
+          // Sub-split by comma or clause if phrase > 80 chars
+          const sub = trimmed.split(/,\s*/);
+          for (const s of sub) {
+            if (s.trim()) validPhrases.push(s.trim());
+          }
         }
-      });
-      fs.writeFileSync(outputPath, Buffer.from(response.data));
-      return true;
+      }
+
+      if (validPhrases.length === 0) validPhrases.push(text.substring(0, 80));
+
+      const tempDir = path.join(path.dirname(outputPath), `tts_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+      const chunkFiles: string[] = [];
+
+      for (let i = 0; i < validPhrases.length; i++) {
+        const phrase = validPhrases[i];
+        const chunkPath = path.join(tempDir, `c_${i}.mp3`);
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(phrase)}`;
+        
+        try {
+          const response = await axios.get(url, {
+            responseType: 'arraybuffer',
+            timeout: 8000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+            }
+          });
+          fs.writeFileSync(chunkPath, Buffer.from(response.data));
+          if (fs.existsSync(chunkPath) && fs.statSync(chunkPath).size > 500) {
+            chunkFiles.push(chunkPath);
+          }
+        } catch (err: any) {
+          console.warn(`[Video Generator] Sub-chunk ${i} download warning:`, err?.message);
+        }
+      }
+
+      if (chunkFiles.length === 0) {
+        try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+        return false;
+      }
+
+      if (chunkFiles.length === 1) {
+        fs.copyFileSync(chunkFiles[0], outputPath);
+      } else {
+        const concatList = path.join(tempDir, 'list.txt');
+        fs.writeFileSync(concatList, chunkFiles.map(c => `file '${c.replace(/\\/g, '/')}'`).join('\n'));
+        await execAsync(`ffmpeg -y -f concat -safe 0 -i "${concatList}" -c copy "${outputPath}"`);
+      }
+
+      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+
+      return fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000;
     } catch (err: any) {
-      console.warn(`[Video Generator] TTS download warning for "${text.substring(0, 30)}...":`, err?.message);
+      console.warn(`[Video Generator] TTS download warning for "${rawText.substring(0, 30)}...":`, err?.message);
       return false;
     }
   }
