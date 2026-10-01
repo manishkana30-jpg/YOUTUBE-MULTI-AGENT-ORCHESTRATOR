@@ -171,9 +171,9 @@ export class VideoGeneratorService {
         const ttsSuccess = await this.downloadTTS(scene.narrationScript, audioPath);
         const duration = ttsSuccess ? await this.getAudioDuration(audioPath) : 6;
 
-        const safeHeadline = (scene.headline || title).replace(/['":\\]/g, '').toUpperCase();
-        const safeSubtitle = (scene.subtitle || '').replace(/['":\\]/g, '').toUpperCase();
-        const safeChannel = (channelTitle || 'NEXO KIDS').replace(/['":\\]/g, '').toUpperCase();
+        const safeHeadline = (scene.headline || title).replace(/%/g, ' PERCENT ').replace(/['":\\%]/g, '').toUpperCase();
+        const safeSubtitle = (scene.subtitle || '').replace(/%/g, ' PERCENT ').replace(/['":\\%]/g, '').toUpperCase();
+        const safeChannel = (channelTitle || 'NEXO KIDS').replace(/%/g, ' PERCENT ').replace(/['":\\%]/g, '').toUpperCase();
 
         // Split headline across lines if long
         let line1 = safeHeadline;
@@ -185,37 +185,59 @@ export class VideoGeneratorService {
           line2 = words.slice(mid).join(' ');
         }
 
+        const isTakeaway = scene.type === 'TAKEAWAY';
+
         const filters = [
-          // Cybernetic Background Engineering Grid
-          `drawgrid=w=80:h=80:t=1:c=0x1E293B@0.4`,
-          // Main Glowing Card
+          // 1. Moving Cybernetic Grid Background (Continuous Motion)
+          `drawgrid=x=-t*30:y=-t*20:w=80:h=80:t=1:c=0x1E293B@0.45`,
+          // 2. Main Glowing Card with Accent
           `drawbox=x=60:y=60:w=1160:h=600:color=${theme.bgCard}@0.95:t=fill`,
           `drawbox=x=60:y=60:w=1160:h=600:color=${theme.color}@0.8:t=3`,
-          // Scene badge pill (top left)
-          `drawbox=x=100:y=90:w=280:h=40:color=${theme.color}@0.2:t=fill`,
-          `drawbox=x=100:y=90:w=280:h=40:color=${theme.color}@0.9:t=2`,
+          // 3. Futuristic Corner Targeting Brackets
+          `drawbox=x=80:y=80:w=40:h=3:color=${theme.color}@0.9:t=fill`,
+          `drawbox=x=80:y=80:w=3:h=40:color=${theme.color}@0.9:t=fill`,
+          `drawbox=x=1160:y=80:w=40:h=3:color=${theme.color}@0.9:t=fill`,
+          `drawbox=x=1197:y=80:w=3:h=40:color=${theme.color}@0.9:t=fill`,
+          // 4. Scene Badge Pill (Top Left)
+          `drawbox=x=100:y=90:w=300:h=40:color=${theme.color}@0.2:t=fill`,
+          `drawbox=x=100:y=90:w=300:h=40:color=${theme.color}@0.9:t=2`,
           `drawtext=fontfile='${fontBold}':text='SCENE ${scene.sceneNumber}/${scenes.length} - ${scene.type}':fontcolor=${theme.color}:fontsize=18:x=115:y=102`,
-          // Channel Branding (top right)
+          // 5. Channel Branding Header (Top Right)
           `drawtext=fontfile='${fontBold}':text='${safeChannel} ACADEMY':fontcolor=0x94A3B8:fontsize=18:x=920:y=102`,
-          // Headline Line 1
-          `drawtext=fontfile='${fontBold}':text='${line1}':fontcolor=white:fontsize=46:x=(w-text_w)/2:y=${line2 ? 230 : 275}`,
-          // Headline Line 2 (if present)
-          ...(line2 ? [`drawtext=fontfile='${fontBold}':text='${line2}':fontcolor=white:fontsize=46:x=(w-text_w)/2:y=300`] : []),
-          // Subtitle / context
-          `drawtext=fontfile='${fontRegular}':text='${safeSubtitle}':fontcolor=0xE2E8F0:fontsize=24:x=(w-text_w)/2:y=400`,
-          // Animated Progress Bar along the bottom of card
-          `drawbox=x=60:y=652:w='min(1160, (t/${duration})*1160)':h=8:color=${theme.color}@0.95:t=fill`
+          // 6. Professional Lower-Third (Channel Name & Topic)
+          `drawbox=x=100:y=590:w=440:h=38:color=0x090A0F@0.9:t=fill`,
+          `drawbox=x=100:y=590:w=440:h=38:color=${theme.color}@0.6:t=2`,
+          `drawtext=fontfile='${fontBold}':text='🔴 ${safeChannel} ACADEMY - CREATOR MASTERCLASS':fontcolor=0xE2E8F0:fontsize=14:x=115:y=603`,
+          // 7. Headline Line 1 (with 0.5s Smooth Fade-in)
+          `drawtext=fontfile='${fontBold}':text='${line1}':fontcolor=white:fontsize=46:x=(w-text_w)/2:y=${line2 ? 220 : 260}:alpha='if(lt(t,0.5),t/0.5,1)'`,
+          // 8. Headline Line 2 (if present, 0.7s Smooth Fade-in)
+          ...(line2 ? [`drawtext=fontfile='${fontBold}':text='${line2}':fontcolor=white:fontsize=46:x=(w-text_w)/2:y=285:alpha='if(lt(t,0.7),t/0.7,1)'`] : []),
+          // 9. Subtitle / Context (with 0.8s Smooth Fade-in)
+          `drawtext=fontfile='${fontRegular}':text='${safeSubtitle}':fontcolor=0xE2E8F0:fontsize=24:x=(w-text_w)/2:y=${line2 ? 370 : 360}:alpha='if(lt(t,0.8),t/0.8,1)'`,
+          // 10. Dedicated Outro CTA elements for TAKEAWAY scene
+          ...(isTakeaway ? [
+            `drawbox=x=380:y=455:w=520:h=56:color=0xFF2A55@0.95:t=fill`,
+            `drawtext=fontfile='${fontBold}':text='👉 SUBSCRIBE & RING THE BELL':fontcolor=white:fontsize=22:x=(w-text_w)/2:y=472:alpha='if(lt(t,0.5),t/0.5,1)'`,
+            `drawtext=fontfile='${fontRegular}':text='DROP YOUR QUESTIONS IN THE COMMENTS BELOW':fontcolor=0xE2E8F0:fontsize=16:x=(w-text_w)/2:y=530:alpha='if(lt(t,0.8),t/0.8,1)'`
+          ] : []),
+          // 11. Animated Progress Bar along the bottom of card
+          `drawbox=x=60:y=652:w='min(1160, (t/${duration})*1160)':h=8:color=${theme.color}@0.95:t=fill`,
+          // 12. Smooth Scene Dissolve Transitions (0.35s In / Out)
+          `fade=t=in:st=0:d=0.35`,
+          `fade=t=out:st=${duration - 0.35}:d=0.35`
         ];
 
         const filterString = filters.join(',');
 
         let ffmpegCmd: string;
         if (ttsSuccess && fs.existsSync(audioPath)) {
-          // Voiceover + ambient background soundbed with True-Peak Audio Normalization (-3dB)
-          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -i "${audioPath}" -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350,volume=0.15" -filter_complex "[1:a]volume=1.0[vocal];[2:a]volume=0.12[bed];[vocal][bed]amix=inputs=2:duration=first,loudnorm=I=-16:TP=-3:LRA=11[aout]" -vf "${filterString}" -map 0:v -map "[aout]" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
+          // Voiceover + ambient bed + transition chime SFX + loudnorm + audio fades
+          const filterA = `[2:a]volume=0.20[sfx];[3:a]volume=0.10[bed];[1:a][bed][sfx]amix=inputs=3:duration=first,loudnorm=I=-16:TP=-3:LRA=11,afade=t=in:st=0:d=0.2,afade=t=out:st=${duration - 0.3}:d=0.3[aout]`;
+          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -i "${audioPath}" -f lavfi -i "sine=f=880:d=0.25,afade=t=out:st=0.08:d=0.17" -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350" -filter_complex "${filterA}" -vf "${filterString}" -map 0:v -map "[aout]" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
         } else {
-          // Silent/ambient audio fallback with normalization
-          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350,volume=0.2,loudnorm=I=-16:TP=-3:LRA=11" -vf "${filterString}" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
+          // Ambient audio fallback with transition SFX & loudnorm
+          const filterA = `[1:a]volume=0.20[sfx];[2:a]volume=0.15[bed];[bed][sfx]amix=inputs=2:duration=first,loudnorm=I=-16:TP=-3:LRA=11,afade=t=in:st=0:d=0.2,afade=t=out:st=${duration - 0.3}:d=0.3[aout]`;
+          ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=0x08090D:s=1280x720:d=${duration} -f lavfi -i "sine=f=880:d=0.25,afade=t=out:st=0.08:d=0.17" -f lavfi -i "anoisesrc=d=${duration}:c=pink:r=44100:a=0.01,lowpass=f=350" -filter_complex "${filterA}" -vf "${filterString}" -map 0:v -map "[aout]" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k "${clipVideoPath}"`;
         }
 
         await execAsync(ffmpegCmd);
