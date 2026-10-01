@@ -8,6 +8,8 @@ import { masterOrchestrator } from './agents/orchestrator.js';
 import { db } from './db/client.js';
 import { waitUntil } from '@vercel/functions';
 import { qualityAuditor } from './services/quality-auditor.js';
+import { getTopicData } from './services/topic-content.js';
+import { getDynamicVideoPlayerHtml } from './services/video-player-html.js';
 
 dotenv.config();
 
@@ -863,6 +865,9 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
           <div class="badge-dot"></div>
           CRON 09:00 UTC Active
         </div>
+        <a href="/video?topic=python" class="btn" style="background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(99, 102, 241, 0.5); text-decoration: none;">
+          <span>🎬 Dynamic Video Player</span>
+        </a>
         <button class="btn" onclick="triggerPipeline()">
           <span>⚡ Trigger Pipeline Now</span>
         </button>
@@ -1155,6 +1160,58 @@ app.get(['/', '/api'], async (req: Request, res: Response) => {
 </html>`;
 
   res.send(html);
+});
+
+// 8. Dynamic Video Content Streaming API (Byte-range request support)
+app.get(['/videos/:filename', '/api/videos/:filename'], (req: Request, res: Response) => {
+  const videoPath = path.resolve(process.cwd(), 'assets', 'fallback.mp4');
+
+  if (!fs.existsSync(videoPath)) {
+    return res.status(404).json({ error: 'Video stream asset not found' });
+  }
+
+  const stat = fs.statSync(videoPath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunksize = (end - start) + 1;
+    const file = fs.createReadStream(videoPath, { start, end });
+    const head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4',
+    };
+    res.writeHead(206, head);
+    file.pipe(res);
+  } else {
+    const head = {
+      'Content-Length': fileSize,
+      'Content-Type': 'video/mp4',
+      'Accept-Ranges': 'bytes'
+    };
+    res.writeHead(200, head);
+    fs.createReadStream(videoPath).pipe(res);
+  }
+});
+
+// 9. Dynamic Voiceover Script API
+app.get(['/scripts/:scriptFile', '/api/scripts/:scriptFile'], (req: Request, res: Response) => {
+  const rawScriptFile = req.params.scriptFile;
+  const scriptFile = (Array.isArray(rawScriptFile) ? rawScriptFile[0] : rawScriptFile) || '';
+  const topicMatch = scriptFile.match(/^([a-z0-9_-]+)_voiceover\.json$/i);
+  const topic = topicMatch ? topicMatch[1] : scriptFile.replace('.json', '');
+  const topicData = getTopicData(topic);
+  res.json(topicData.voiceover);
+});
+
+// 10. Dynamic Video Player Web App (JavaScript DOM Architecture)
+app.get(['/video', '/course/:topic', '/python', '/javascript', '/webdev', '/ai'], (req: Request, res: Response) => {
+  res.send(getDynamicVideoPlayerHtml());
 });
 
 // Fallback route: Redirect any unhandled paths to dashboard
