@@ -695,6 +695,9 @@ export function getSmartVideoSystemHtml(): string {
       <a href="/voiceover-studio" class="nav-link" style="border-color: #10B981; background: rgba(16, 185, 129, 0.15); color: #6EE7B7;">
         🗣️ Voiceover Studio
       </a>
+      <a href="/workflow" class="nav-link" style="border-color: #6366F1; background: rgba(99, 102, 241, 0.15); color: #C7D2FE;">
+        🚀 4-Day Roadmap
+      </a>
     </nav>
   </div>
 

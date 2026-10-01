@@ -813,6 +813,9 @@ export function getObsHybridStudioHtml(): string {
       <a href="/voiceover-studio" class="btn" style="border-color: #10B981; color: #6EE7B7;">
         🗣️ Natural Voiceover Studio
       </a>
+      <a href="/workflow" class="btn" style="border-color: #6366F1; color: #C7D2FE;">
+        🚀 4-Day Roadmap
+      </a>
       <a href="/api/obs-hybrid/download-scenes" class="btn btn-primary" download="NEXO_OBS_Hybrid_Scenes.json">
         📥 Download OBS Scene Collection (.json)
       </a>

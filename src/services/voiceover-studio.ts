@@ -478,6 +478,9 @@ export function getVoiceoverStudioHtml(): string {
       <a href="/hybrid-studio" class="btn">
         🎙️ OBS Hybrid Studio
       </a>
+      <a href="/workflow" class="btn" style="border-color: #6366F1; color: #C7D2FE;">
+        🚀 4-Day Roadmap
+      </a>
       <a href="/smart-video?topic=python" class="btn">
         🎬 Smart Video Player
       </a>

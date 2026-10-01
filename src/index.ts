@@ -13,6 +13,7 @@ import { getDynamicVideoPlayerHtml } from './services/video-player-html.js';
 import { contentMap, getSmartVideoSystemHtml } from './services/smart-video-system.js';
 import { getObsHybridStudioHtml, generateObsSceneCollectionJson } from './services/obs-hybrid-video.js';
 import { getVoiceoverStudioHtml } from './services/voiceover-studio.js';
+import { getWorkflowMissionControlHtml } from './services/workflow-orchestrator.js';
 
 dotenv.config();
 
@@ -1362,6 +1363,11 @@ app.get('/hybrid-studio/overlays/kinetic', (req: Request, res: Response) => {
 // 16. Natural Voiceover Studio & Teleprompter
 app.get(['/voiceover-studio', '/api/voiceover-studio'], (req: Request, res: Response) => {
   res.send(getVoiceoverStudioHtml());
+});
+
+// 17. Complete 4-Day Video Production Workflow & Editing Checklist
+app.get(['/workflow', '/api/workflow'], (req: Request, res: Response) => {
+  res.send(getWorkflowMissionControlHtml());
 });
 
 // Fallback route: Redirect any unhandled paths to dashboard
