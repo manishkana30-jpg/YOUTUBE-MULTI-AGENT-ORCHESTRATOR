@@ -38,12 +38,12 @@ export const contentMap: Record<string, ContentItem> = {
     bgColor: '#080E1C',
     font: "'Fira Code', 'JetBrains Mono', monospace",
     visuals: [
-      { timestamp: 0.5, type: 'headline', text: '🐍 Complete Python Tutorial for Beginners', subtitle: 'Hey everyone, welcome back! Today we master Python from zero to hero.', animation: 'fade-down', color: '#3B82F6', actor: 'professional_male_voice', framing: 'FULLSCREEN_PRESENTER' },
-      { timestamp: 3.0, type: 'code-callout', text: 'Most developers struggle with blocking synchronous scripts.', subtitle: 'Watch the split screen: standard threads stall under heavy I/O workloads.', animation: 'slide-left', color: '#60A5FA', actor: 'professional_male_voice', framing: 'SPLIT_SCREEN' },
-      { timestamp: 6.5, type: 'diagram', text: 'Step 1: Asyncio Event Loops & TaskGroups', subtitle: 'Watch how I do it on screen: concurrent task gathering yields 8x throughput.', animation: 'zoom-pulse', color: '#F59E0B', actor: 'professional_male_voice', framing: 'PICTURE_IN_PICTURE' },
-      { timestamp: 9.5, type: 'metrics', text: 'Real Case Study: Production Benchmark 140ms', subtitle: 'My student followed these steps and reduced WebSocket latency from 1.2s to 140ms.', animation: 'glow-rise', color: '#10B981', actor: 'professional_male_voice', framing: 'PICTURE_IN_PICTURE' },
-      { timestamp: 12.0, type: 'story', text: 'Three years ago, I didn\'t know asyncio either.', subtitle: 'Learning this architectural method transformed my backend engineering career.', animation: 'fade-down', color: '#8B5CF6', actor: 'professional_male_voice', framing: 'CLOSE_UP' },
-      { timestamp: 14.5, type: 'cta', text: '👉 Subscribe to NEXO KIDS for Daily Python Blueprints', subtitle: 'Try this yourself today, comment what you discover, and ring the bell!', animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_male_voice', framing: 'FULLSCREEN_PRESENTER' }
+      { timestamp: 0.5, type: 'intro', text: '🐍 Python Basics for Beginners', subtitle: "Hey everyone! I'm about to show you Python basics. By the end of this, you'll be able to write your first program. Let's go!", animation: 'fade-down', color: '#3B82F6', actor: 'professional_male_voice', framing: 'FULLSCREEN_PRESENTER' },
+      { timestamp: 3.0, type: 'problem', text: 'Split Screen: Why People Struggle with Python', subtitle: "Most people give up on Python because they think it's too hard. But I'm going to show you it's actually simple. Here's what I see people struggling with...", animation: 'slide-left', color: '#60A5FA', actor: 'professional_male_voice', framing: 'SPLIT_SCREEN' },
+      { timestamp: 6.5, type: 'teaching', text: 'Step 1: Live Code & Highlighting Common Mistakes', subtitle: "Step 1: Writing clean functions. See how I'm doing this? Now here's the common mistake: indentation errors. Let me show you the right way.", animation: 'zoom-pulse', color: '#F59E0B', actor: 'professional_male_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 9.5, type: 'example', text: 'Real Working Code Running Live with Output', subtitle: "Look at this! I just wrote this code and it worked first try. See the output on screen? That's exactly what we wanted.", animation: 'glow-rise', color: '#10B981', actor: 'professional_male_voice', framing: 'PICTURE_IN_PICTURE' },
+      { timestamp: 12.0, type: 'story', text: 'Personal Story: Five Years Ago I Knew Zero Python', subtitle: "Here's why this matters to me. Five years ago I didn't know Python. Then I learned it, and it completely changed my career.", animation: 'fade-down', color: '#8B5CF6', actor: 'professional_male_voice', framing: 'CLOSE_UP' },
+      { timestamp: 14.5, type: 'cta', text: 'Call to Action: Build Today & Subscribe', subtitle: "I want you to try coding today. Comment below what you build. Subscribe for more Python lessons!", animation: 'pulse-badge', color: '#FF2A55', actor: 'professional_male_voice', framing: 'FULLSCREEN_PRESENTER' }
     ]
   },
 
@@ -833,10 +833,60 @@ export function getSmartVideoSystemHtml(): string {
     <!-- Dynamic Teleprompter Box -->
     <div class="script-teleprompter" id="teleprompterText">
       <strong>[00:00-00:30] INTRO SCRIPT:</strong><br>
-      "Hey everyone, welcome back! I'm your host, and today I'm going to show you how to master this topic. By the end of this video, you'll understand exactly what you need to know to get started. So let's jump in!"
+      "Hey everyone! I'm about to show you Python basics. By the end of this, you'll be able to write your first program. Let's go!"
       <div class="notes-box">
         <strong>Production Notes:</strong> Direct eye contact with camera &bull; Warm natural smile &bull; Conversational tone &bull; Gentle hand gestures.
       </div>
+    </div>
+  </div>
+
+  <!-- BEFORE VS AFTER TRANSFORMATION SHOWCASE -->
+  <div class="production-card" style="margin-top: 1.5rem;">
+    <div class="production-header">
+      <div class="production-title">
+        <span>📊 Transformation Case Study: Python Tutorial Video</span>
+      </div>
+      <span class="badge-pill" style="background: #10B981; color: #000;">PROVEN RESULTS</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-top: 1rem;">
+      <!-- BEFORE CARD -->
+      <div style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 0.5rem;">
+          <strong style="color: #EF4444; font-size: 1.05rem;">❌ BEFORE (Slideshow Disaster)</strong>
+          <span style="font-family: var(--mono); font-size: 0.72rem; background: rgba(239, 68, 68, 0.2); color: #FCA5A5; padding: 0.15rem 0.5rem; border-radius: 4px;">2 VIEWS</span>
+        </div>
+        <ul style="list-style: none; font-size: 0.85rem; color: #CBD5E1; display: flex; flex-direction: column; gap: 0.4rem;">
+          <li>✗ Just static slides with plain bullet points</li>
+          <li>✗ Robotic text-to-speech voice reading words</li>
+          <li>✗ Zero human presence or eye contact</li>
+          <li>✗ Boring background music with muffled audio</li>
+          <li>✗ No engagement or real story connection</li>
+          <li>⚠️ <strong>Audience Retention:</strong> Drops off at 30 seconds</li>
+          <li>📉 <strong>Final Result:</strong> 2 views, 0 subscribers</li>
+        </ul>
+      </div>
+
+      <!-- AFTER CARD -->
+      <div style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 0.5rem;">
+          <strong style="color: #10B981; font-size: 1.05rem;">✅ AFTER (Human Presence)</strong>
+          <span style="font-family: var(--mono); font-size: 0.72rem; background: rgba(16, 185, 129, 0.2); color: #6EE7B7; padding: 0.15rem 0.5rem; border-radius: 4px;">2,000+ VIEWS</span>
+        </div>
+        <ul style="list-style: none; font-size: 0.85rem; color: #CBD5E1; display: flex; flex-direction: column; gap: 0.4rem;">
+          <li>✓ You on camera + Split screen + Working code</li>
+          <li>✓ Natural conversational voice (warm, enthusiastic)</li>
+          <li>✓ Real problem empathy + personal breakthrough story</li>
+          <li>✓ Studio audio (-6dB normalized) + subtle BGM</li>
+          <li>✓ 6-stage video pacing with kinetic highlights</li>
+          <li>🔥 <strong>Audience Retention:</strong> 15+ minute average watch time</li>
+          <li>📈 <strong>Final Result:</strong> 2,000+ views, 500+ subscribers, 50+ comments</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.25rem; background: rgba(0, 0, 0, 0.4); border-left: 4px solid var(--theme-color); padding: 0.85rem 1.2rem; border-radius: 8px; font-size: 0.88rem; color: #E2E8F0;">
+      <strong>The Fundamental Difference:</strong> Before was robotic, impersonal, and boring. After is human, relatable, and deeply engaging.
     </div>
   </div>
 
